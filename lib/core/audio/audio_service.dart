@@ -13,7 +13,6 @@ import '../../config/app_config.dart';
 import '../../shared/models/song.dart';
 import '../storage/secure_storage.dart';
 import '../utils/cover_url.dart';
-import '../utils/encode.dart';
 import '../utils/proxy_url.dart';
 
 /// MiMusic 音频处理器 - 集成 audio_service 实现通知栏控制
@@ -186,8 +185,9 @@ class MiMusicAudioHandler extends BaseAudioHandler with SeekHandler {
   // ====================== 业务方法 ======================
 
   /// 播放歌曲
-  /// - 本地歌曲：使用服务器 URL + query parameter (access_token)
-  /// - 网络歌曲/电台：直接使用 url
+  /// 所有 type(local/remote/radio)统一使用 song.url —— 后端 marshal Song 时
+  /// 自动把 url 填成 /api/v1/cache/{id},按 type 分发到 ServeFile / Orchestrator /
+  /// 直链下载 / 电台 302,客户端无需关心 type。
   Future<void> playSong(Song song, String? accessToken) async {
     // 确保 stream listeners 已建立
     await _initFuture;
@@ -198,54 +198,33 @@ class MiMusicAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       ja.AudioSource source;
 
-      if (song.type == 'local' && song.filePath != null) {
-        // 本地歌曲，通过服务器 API 获取
-        // iOS AVPlayer 不支持自定义 Header 认证，改用 URL query parameter
-        final filePath = song.filePath!;
-        final pathWithoutExt = getPathWithoutExtension(filePath);
-        final ext = getExtension(filePath);
-        final encodedPath = encodeBase62(pathWithoutExt);
-        final token = accessToken ?? '';
-        // 格式: /music/{base62编码的路径}{扩展名}?access_token=xxx
-        final uri = Uri.parse(
-          '${AppConfig.baseUrl}/music/$encodedPath$ext?access_token=$token',
-        );
-        debugPrint('[Player] MiMusicAudioHandler: local song, uri: $uri');
-        // Web 平台使用 AudioSource.uri，其他平台使用 LockCachingAudioSource 实现边播边缓存
-        if (kIsWeb) {
-          source = ja.AudioSource.uri(uri);
-        } else {
-          source = ja.LockCachingAudioSource(uri);
-        }
-      } else if (song.url != null && song.url!.isNotEmpty) {
-        // 网络歌曲或电台：Web 平台通过后端代理转发，解决 CORS 限制
-        String songUrl = song.url!;
-
-        // 处理相对路径（本服务器的 API 路径，如 /api/v1/plugin/...）
-        // 原生平台无法携带 Authorization Header，需拼接 baseUrl 并附加 access_token
-        if (songUrl.startsWith('/')) {
-          final token =
-              accessToken ?? SecureStorageService.cachedAccessToken ?? '';
-          final separator = songUrl.contains('?') ? '&' : '?';
-          songUrl =
-              '${AppConfig.baseUrl}$songUrl${separator}access_token=$token';
-          debugPrint(
-            '[Player] MiMusicAudioHandler: server-relative url with token: $songUrl',
-          );
-        } else {
-          songUrl = ProxyUrl.buildProxyUrl(songUrl);
-        }
-
-        debugPrint('[Player] MiMusicAudioHandler: network song, url: $songUrl');
-        // Web 平台使用 AudioSource.uri，其他平台使用 LockCachingAudioSource 实现边播边缓存
-        if (kIsWeb) {
-          source = ja.AudioSource.uri(Uri.parse(songUrl));
-        } else {
-          source = ja.LockCachingAudioSource(Uri.parse(songUrl));
-        }
-      } else {
+      if (song.url == null || song.url!.isEmpty) {
         debugPrint('[Player] MiMusicAudioHandler: no valid source for song');
         throw Exception('无法播放：歌曲没有有效的播放源');
+      }
+
+      String songUrl = song.url!;
+      // 处理相对路径（本服务器的 API 路径,如 /api/v1/cache/{id}）
+      // 原生平台无法携带 Authorization Header,需拼接 baseUrl 并附加 access_token
+      if (songUrl.startsWith('/')) {
+        final token =
+            accessToken ?? SecureStorageService.cachedAccessToken ?? '';
+        final separator = songUrl.contains('?') ? '&' : '?';
+        songUrl = '${AppConfig.baseUrl}$songUrl${separator}access_token=$token';
+        debugPrint(
+          '[Player] MiMusicAudioHandler: server-relative url with token: $songUrl',
+        );
+      } else {
+        // 绝对 URL(用户粘贴的纯外链)：Web 平台通过后端代理转发,解决 CORS 限制
+        songUrl = ProxyUrl.buildProxyUrl(songUrl);
+      }
+
+      debugPrint('[Player] MiMusicAudioHandler: song url: $songUrl');
+      // Web 平台使用 AudioSource.uri,其他平台使用 LockCachingAudioSource 实现边播边缓存
+      if (kIsWeb) {
+        source = ja.AudioSource.uri(Uri.parse(songUrl));
+      } else {
+        source = ja.LockCachingAudioSource(Uri.parse(songUrl));
       }
 
       // ★ 修复自动切歌时通知栏不更新问题：
