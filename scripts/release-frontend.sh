@@ -1,8 +1,18 @@
 #!/bin/bash
 
 # Songloft Flutter 前端版本发布脚本
-# 用法：./scripts/release-frontend.sh [major|minor|patch]
-# 示例：./scripts/release-frontend.sh patch  # 1.0.0 -> 1.0.1
+# 用法：./scripts/release-frontend.sh [release|major|minor|patch] [--dry-run]
+# 示例：
+#   ./scripts/release-frontend.sh release          # 2.0.0-alpha.2 -> 2.0.0（去掉预发布后缀）
+#   ./scripts/release-frontend.sh patch             # 2.0.0 -> 2.0.1
+#   ./scripts/release-frontend.sh minor --dry-run   # 仅预览，不修改
+#
+# 流程：
+#   1. 更新 pubspec.yaml 中的版本号
+#   2. git commit + tag + push（push tag 后由 .github/workflows/build-and-release.yml
+#      完成多平台构建、GitHub Release，以及 CHANGELOG 生成）
+#
+# 最后一行 stdout 输出新版本号（带 v 前缀），方便链式调用。
 
 set -e
 
@@ -11,101 +21,123 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# 获取脚本所在目录（脚本位于 frontend/scripts/ 下）
+# ============================================================
+# 参数解析
+# ============================================================
+BUMP_TYPE=""
+DRY_RUN=false
+
+for arg in "$@"; do
+    case "$arg" in
+        release|major|minor|patch)
+            BUMP_TYPE="$arg"
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            ;;
+        -h|--help)
+            echo "Songloft Flutter 前端版本发布工具"
+            echo ""
+            echo "用法:"
+            echo "  $0 [release|major|minor|patch] [--dry-run]"
+            echo ""
+            echo "参数:"
+            echo "  release  - 正式发布（去掉预发布后缀：2.0.0-alpha.2 -> 2.0.0）"
+            echo "  major    - 主版本号升级 (1.0.0 -> 2.0.0)"
+            echo "  minor    - 次版本号升级 (1.0.0 -> 1.1.0)"
+            echo "  patch    - 补丁版本号升级 (1.0.0 -> 1.0.1，默认)"
+            echo "  --dry-run - 仅打印将要执行的操作，不实际修改文件"
+            echo ""
+            echo "示例:"
+            echo "  $0 release             # 2.0.0-alpha.2 -> 2.0.0"
+            echo "  $0 patch               # 2.0.0 -> 2.0.1"
+            echo "  $0 minor --dry-run     # 仅预览，不修改"
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}错误：未知参数 '$arg'${NC}" >&2
+            echo "用法：$0 [release|major|minor|patch] [--dry-run]" >&2
+            exit 1
+            ;;
+    esac
+done
+
+# 默认 patch
+BUMP_TYPE="${BUMP_TYPE:-patch}"
+
+# ============================================================
+# 工具函数
+# ============================================================
+
+# 获取脚本所在目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$(dirname "$SCRIPT_DIR")"
-PROJECT_ROOT="$(dirname "$FRONTEND_DIR")"
-
-# 文件路径
 PUBSPEC_FILE="$FRONTEND_DIR/pubspec.yaml"
 
-# 帮助信息
-show_help() {
-    echo -e "${BLUE}Songloft Flutter 前端版本发布工具${NC}"
-    echo ""
-    echo "用法:"
-    echo "  $0 [major|minor|patch]"
-    echo ""
-    echo "参数:"
-    echo "  major  - 主版本号升级 (1.0.0 -> 2.0.0)"
-    echo "  minor  - 次版本号升级 (1.0.0 -> 1.1.0)"
-    echo "  patch  - 补丁版本号升级 (1.0.0 -> 1.0.1，默认)"
-    echo ""
-    echo "示例:"
-    echo "  $0 patch   # 1.0.0 -> 1.0.1"
-    echo "  $0 minor   # 1.0.0 -> 1.1.0"
-    echo "  $0 major   # 1.0.0 -> 2.0.0"
-    echo ""
+log_info() {
+    echo -e "${BLUE}$1${NC}" >&2
 }
 
-# 检查是否在 git 仓库中
-check_git_repo() {
-    if ! git rev-parse --git-dir > /dev/null 2>&1; then
-        echo -e "${RED}错误：当前目录不是 git 仓库${NC}"
-        exit 1
-    fi
+log_ok() {
+    echo -e "${GREEN}✓${NC} $1" >&2
 }
 
-# 检查是否有未提交的更改
-check_uncommitted_changes() {
-    if ! git diff-index --quiet HEAD --; then
-        echo -e "${YELLOW}警告：存在未提交的更改${NC}"
-        read -p "是否继续？(y/N) " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            echo -e "${RED}已取消${NC}"
-            exit 1
-        fi
-    fi
+log_warn() {
+    echo -e "${YELLOW}警告：$1${NC}" >&2
 }
 
-# 获取当前版本号
+log_err() {
+    echo -e "${RED}错误：$1${NC}" >&2
+}
+
+# 获取当前版本号（从 pubspec.yaml，去掉 build number）
 get_current_version() {
     if [ ! -f "$PUBSPEC_FILE" ]; then
-        echo -e "${RED}错误：找不到 pubspec.yaml 文件${NC}"
+        log_err "找不到 $PUBSPEC_FILE"
         exit 1
     fi
 
-    # 从 pubspec.yaml 中提取版本号 (格式：version: X.Y.Z+W)
     local version_line
     version_line=$(grep '^version:' "$PUBSPEC_FILE" | head -1)
 
     if [ -z "$version_line" ]; then
-        echo -e "${RED}错误：pubspec.yaml 中找不到 version 字段${NC}"
+        log_err "pubspec.yaml 中找不到 version 字段"
         exit 1
     fi
 
-    # 提取版本号部分 (去掉 "version: " 前缀)
-    echo "$version_line" | sed 's/version: //' | cut -d'+' -f1
+    # 提取版本号（去掉 "version: " 前缀和 "+build" 后缀）
+    echo "$version_line" | sed 's/version: //' | cut -d'+' -f1 | tr -d '[:space:]'
 }
 
-# 解析版本号
-parse_version() {
-    local version=$1
-    # 去掉可能的 'v' 前缀
-    echo "$version" | sed 's/^v//'
+# 提取基础版本号（去掉预发布后缀：2.0.0-alpha.2 -> 2.0.0）
+strip_prerelease() {
+    echo "$1" | cut -d'-' -f1
 }
 
 # 升级版本号
 bump_version() {
-    local version=$1
-    local bump_type=$2
+    local version="$1"
+    local bump_type="$2"
 
-    # 分解版本号
+    # 先去掉预发布后缀
+    version=$(strip_prerelease "$version")
+
     local major minor patch
     major=$(echo "$version" | cut -d. -f1)
     minor=$(echo "$version" | cut -d. -f2)
     patch=$(echo "$version" | cut -d. -f3)
 
-    # 验证版本号格式
     if ! [[ "$major" =~ ^[0-9]+$ ]] || ! [[ "$minor" =~ ^[0-9]+$ ]] || ! [[ "$patch" =~ ^[0-9]+$ ]]; then
-        echo -e "${RED}错误：无效的版本号格式 '$version'${NC}"
+        log_err "无效的版本号格式 '$version'"
         exit 1
     fi
 
-    case $bump_type in
+    case "$bump_type" in
+        release)
+            # 直接使用基础版本号（去掉预发布后缀即可）
+            ;;
         major)
             major=$((major + 1))
             minor=0
@@ -118,32 +150,25 @@ bump_version() {
         patch)
             patch=$((patch + 1))
             ;;
-        *)
-            echo -e "${RED}错误：无效的升级类型 '$bump_type'${NC}"
-            echo "用法：$0 [major|minor|patch]"
-            exit 1
-            ;;
     esac
 
-    echo "$major.$minor.$patch"
+    echo "${major}.${minor}.${patch}"
 }
 
-# 更新 pubspec.yaml 中的版本号
+# 更新 pubspec.yaml
 update_pubspec() {
     local new_version=$1
-    local build_number
 
-    # 获取当前的 build number (+W 部分)
-    local current_version_line
+    # 获取当前 build number
+    local current_version_line build_number
     current_version_line=$(grep '^version:' "$PUBSPEC_FILE" | head -1)
 
     if [[ "$current_version_line" == *"+"* ]]; then
-        build_number=$(echo "$current_version_line" | sed 's/.*+//')
+        build_number=$(echo "$current_version_line" | sed 's/.*+//' | tr -d '[:space:]')
     else
         build_number="1"
     fi
 
-    # 更新版本号，保留 build number
     local new_version_full="${new_version}+${build_number}"
 
     if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -152,140 +177,133 @@ update_pubspec() {
         sed -i "s/^version: .*/version: ${new_version_full}/" "$PUBSPEC_FILE"
     fi
 
-    echo -e "${GREEN}✓${NC} pubspec.yaml 已更新为 ${new_version_full}"
+    log_ok "pubspec.yaml 已更新为 ${new_version_full}"
 }
 
-# 创建 git tag
-create_git_tag() {
-    local new_version=$1
-    local tag_name="v$new_version"
+# ============================================================
+# 主流程
+# ============================================================
+main() {
+    log_info "=== Songloft Flutter 前端版本发布工具 ==="
+    if [ "$DRY_RUN" = true ]; then
+        log_warn "DRY-RUN 模式：不会实际修改任何文件"
+    fi
+    echo "" >&2
 
-    # 检查 tag 是否已存在
-    if git rev-parse "$tag_name" >/dev/null 2>&1; then
-        echo -e "${YELLOW}警告：Git 标签 '$tag_name' 已存在${NC}"
-        read -p "是否覆盖现有标签？(y/N) " -n 1 -r
+    # 检查 git 仓库
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+        log_err "当前目录不是 git 仓库"
+        exit 1
+    fi
+
+    # 检查 pubspec.yaml
+    if [ ! -f "$PUBSPEC_FILE" ]; then
+        log_err "未找到 $PUBSPEC_FILE，请在项目根目录运行此脚本"
+        exit 1
+    fi
+
+    # 获取当前版本
+    local current_version
+    current_version=$(get_current_version)
+    if [ -z "$current_version" ]; then
+        log_err "无法从 pubspec.yaml 读取版本号"
+        exit 1
+    fi
+
+    # 计算新版本
+    local new_version
+    new_version=$(bump_version "$current_version" "$BUMP_TYPE")
+
+    log_info "当前版本: ${current_version}"
+    log_info "新版本:   ${new_version}"
+    log_info "升级类型: ${BUMP_TYPE}"
+    echo "" >&2
+
+    # 检查版本号是否有变化
+    if [ "$current_version" = "$new_version" ]; then
+        log_warn "版本号未变化（当前已是 ${new_version}），无需发布"
+        exit 0
+    fi
+
+    if [ "$DRY_RUN" = false ]; then
+        read -p "确认发布版本 ${new_version}？(y/N) " -n 1 -r
         echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            git tag -d "$tag_name" >/dev/null 2>&1 || true
-            git push origin ":refs/tags/$tag_name" >/dev/null 2>&1 || true
-            echo -e "${YELLOW}✓ 已删除旧标签${NC}"
-        else
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             echo -e "${RED}已取消${NC}"
             exit 1
         fi
     fi
 
-    # 创建新的 annotated tag
-    git tag -a "$tag_name" -m "Frontend release version $new_version"
-    echo -e "${GREEN}✓${NC} Git 标签 ${tag_name} 已创建"
-}
+    # CI 环境：自动配置 git user
+    if [ -z "$(git config user.email 2>/dev/null)" ]; then
+        log_warn "git user.email 未设置，自动配置为 CI 用户"
+        if [ "$DRY_RUN" = false ]; then
+            git config user.email 'ci@songloft'
+            git config user.name 'Songloft CI'
+        fi
+    fi
 
-# 推送 git tag 到远程仓库
-push_git_tag() {
-    local new_version=$1
-    local tag_name="v$new_version"
-
-    echo -e "${BLUE}[推送]${NC} 正在推送 Git 标签到远程仓库..."
-
-    if git push origin "$tag_name"; then
-        echo -e "${GREEN}✓${NC} Git 标签 ${tag_name} 已推送到远程仓库"
+    # 1. 更新 pubspec.yaml
+    log_info "[1/4] 更新 pubspec.yaml 中的版本号..."
+    if [ "$DRY_RUN" = true ]; then
+        echo -e "${YELLOW}[dry-run]${NC} pubspec.yaml: version ${current_version} -> ${new_version}" >&2
     else
-        echo -e "${RED}✗${NC} 推送 Git 标签失败"
-        exit 1
+        update_pubspec "$new_version"
     fi
-}
+    log_ok "pubspec.yaml 已更新"
 
-# 提交更改
-commit_changes() {
-    local new_version=$1
-
-    echo -e "${BLUE}[提交]${NC} 提交更改到 git..."
-
-    # 添加修改的文件
-    git add "$PUBSPEC_FILE" 2>/dev/null || true
-
-    # 检查是否有内容需要提交
-    if ! git diff-index --quiet --cached HEAD --; then
-        git commit -m "chore(frontend): release version $new_version" > /dev/null 2>&1
-        echo -e "${GREEN}✓${NC} 更改已提交到 git"
+    # 2. 提交更改
+    log_info "[2/4] 提交更改到 git..."
+    if [ "$DRY_RUN" = true ]; then
+        echo -e "${YELLOW}[dry-run]${NC} git add pubspec.yaml" >&2
+        echo -e "${YELLOW}[dry-run]${NC} git commit -m 'chore: release version ${new_version}'" >&2
     else
-        echo -e "${YELLOW}⚠${NC} 没有检测到需要提交的更改"
-    fi
-}
-
-# 主函数
-main() {
-    local bump_type=${1:-patch}
-
-    echo -e "${BLUE}========================================${NC}"
-    echo -e "${BLUE}Songloft Flutter 前端版本发布工具${NC}"
-    echo -e "${BLUE}========================================${NC}"
-    echo ""
-
-    # 检查
-    check_git_repo
-    check_uncommitted_changes
-
-    # 获取当前版本
-    local current_version
-    current_version=$(get_current_version)
-    current_version=$(parse_version "$current_version")
-
-    # 计算新版本
-    local new_version
-    new_version=$(bump_version "$current_version" "$bump_type")
-
-    echo -e "${BLUE}当前版本:${NC} $current_version"
-    echo -e "${BLUE}新版本:${NC} $new_version"
-    echo -e "${BLUE}升级类型:${NC} $bump_type"
-    echo ""
-
-    # 确认
-    read -p "确认发布 Flutter 前端新版本？(y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo -e "${RED}已取消${NC}"
-        exit 1
+        git add "$PUBSPEC_FILE"
+        if ! git diff-index --quiet --cached HEAD --; then
+            git commit -m "chore: release version ${new_version}"
+            log_ok "更改已提交"
+        else
+            log_warn "没有检测到需要提交的更改"
+        fi
     fi
 
-    echo ""
-    echo -e "${BLUE}开始发布流程...${NC}"
-    echo ""
+    # 3. 创建 git tag
+    log_info "[3/4] 创建 git tag..."
+    local tag_name="v${new_version}"
+    if [ "$DRY_RUN" = true ]; then
+        echo -e "${YELLOW}[dry-run]${NC} git tag -a '${tag_name}' -m 'Release version ${new_version}'" >&2
+    else
+        if git rev-parse "$tag_name" >/dev/null 2>&1; then
+            log_warn "Git 标签 '${tag_name}' 已存在"
+            read -p "是否覆盖现有标签？(y/N) " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                git tag -d "$tag_name" >/dev/null 2>&1 || true
+                git push origin ":refs/tags/$tag_name" >/dev/null 2>&1 || true
+                log_ok "已删除旧标签"
+            else
+                echo -e "${RED}已取消${NC}"
+                exit 1
+            fi
+        fi
+        git tag -a "$tag_name" -m "Release version ${new_version}"
+    fi
+    log_ok "Git 标签 ${tag_name} 已创建"
 
-    # 更新 pubspec.yaml
-    echo -e "${BLUE}[1/5]${NC} 更新 pubspec.yaml 中的版本号..."
-    update_pubspec "$new_version"
+    # 4. 推送
+    log_info "[4/4] 推送更改和 tag..."
+    if [ "$DRY_RUN" = true ]; then
+        echo -e "${YELLOW}[dry-run]${NC} git push --follow-tags" >&2
+    else
+        git push --follow-tags
+    fi
+    log_ok "已推送到远程仓库"
 
-    # 提交更改
-    echo -e "${BLUE}[3/5]${NC} 提交更改到 git..."
-    commit_changes "$new_version"
+    echo "" >&2
+    log_info "Release URL: https://github.com/songloft-org/songloft-player/releases/tag/${tag_name}"
 
-    # 创建 git tag
-    echo -e "${BLUE}[4/5]${NC} 创建 git tag..."
-    create_git_tag "$new_version"
-
-    # 推送 git tag
-    echo -e "${BLUE}[5/5]${NC} 推送 git tag 到远程仓库..."
-    push_git_tag "$new_version"
-
-    git push --follow-tags
-
-    echo ""
-    echo -e "${GREEN}========================================${NC}"
-    echo -e "${GREEN}✓ Flutter 前端版本发布完成！${NC}"
-    echo -e "${GREEN}========================================${NC}"
-    echo ""
-    echo -e "${BLUE}新版本:${NC} $new_version"
-    echo -e "${BLUE}Git Tag:${NC} v$new_version"
-    echo -e "${BLUE}Release URL:${NC} https://github.com/songloft-org/songloft-player/releases/tag/v$new_version"
-    echo ""
+    # 最后一行 stdout 输出新版本号（带 v 前缀），方便链式调用
+    echo "v${new_version}"
 }
 
-# 检查参数
-if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
-    show_help
-    exit 0
-fi
-
-# 执行主函数
-main "$@"
+main
