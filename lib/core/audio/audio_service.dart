@@ -202,7 +202,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
       }
 
       // 原生平台无法携带 Authorization Header,UrlHelper 会自动拼接 baseUrl + access_token
-      final songUrl = UrlHelper.buildSongUrl(song.url!);
+      final songUrl = UrlHelper.buildSongUrl(song.url!, songFormat: song.format);
 
       debugPrint('[Player] SongloftAudioHandler: song url: $songUrl');
       // Web 平台 / 电台直播流使用 AudioSource.uri（直播流无法缓存）,

@@ -1195,7 +1195,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
     try {
       // 构造预加载 URL：UrlHelper 已拼好 baseUrl + access_token，再附加 prefetch=true
-      final songUrl = UrlHelper.buildSongUrl(nextSong.url!);
+      final songUrl = UrlHelper.buildSongUrl(nextSong.url!, songFormat: nextSong.format);
       final separator = songUrl.contains('?') ? '&' : '?';
       final prefetchUrl = '$songUrl${separator}prefetch=true';
 
