@@ -639,6 +639,27 @@ class _PlaylistsPageState extends ConsumerState<PlaylistsPage> {
       ),
       title: Text('已选择 ${_selectedPlaylistIds.length} 个'),
       actions: [
+        // 播放按钮
+        TextButton.icon(
+          icon: Icon(
+            Icons.play_arrow,
+            color:
+                _selectedPlaylistIds.isEmpty
+                    ? null
+                    : Theme.of(context).colorScheme.primary,
+          ),
+          label: Text(
+            '播放(${_selectedPlaylistIds.length})',
+            style: TextStyle(
+              color:
+                  _selectedPlaylistIds.isEmpty
+                      ? null
+                      : Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          onPressed:
+              _selectedPlaylistIds.isEmpty ? null : _playSelectedPlaylists,
+        ),
         // 删除按钮
         TextButton.icon(
           icon: Icon(
@@ -1007,6 +1028,25 @@ class _PlaylistsPageState extends ConsumerState<PlaylistsPage> {
       if (success && mounted) {
         ResponsiveSnackBar.showSuccess(context, message: '歌单已删除');
       }
+    }
+  }
+
+  Future<void> _playSelectedPlaylists() async {
+    final ids = _selectedPlaylistIds.toList();
+    _toggleSelectMode();
+    final total = await ref
+        .read(playerStateProvider.notifier)
+        .playMultiplePlaylistsById(ids);
+    if (!mounted) return;
+    if (total < 0) {
+      ResponsiveSnackBar.showError(context, message: '播放失败');
+    } else if (total == 0) {
+      ResponsiveSnackBar.show(context, message: '歌单为空');
+    } else {
+      ResponsiveSnackBar.show(
+        context,
+        message: '正在播放 ${ids.length} 个歌单',
+      );
     }
   }
 

@@ -657,7 +657,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
   /// 返回用于展示的总歌曲数（-1 表示失败）
   Future<int> playPlaylistById(int playlistId) async {
     final playlistApi = ref.read(playlistApiProvider);
-    const firstPageLimit = 100;
+    const firstPageLimit = 10;
 
     debugPrint('[Player] playPlaylistById: start, playlistId=$playlistId');
     _consecutiveFailures = 0;
@@ -705,6 +705,144 @@ class PlayerNotifier extends Notifier<PlayerState> {
       debugPrint('[Player] playPlaylistById error: $e\n$st');
       return -1;
     }
+  }
+
+  /// 合并播放多个歌单
+  /// 第一个歌单立即播放，后续歌单后台加载追加到播放队列
+  Future<int> playMultiplePlaylistsById(List<int> playlistIds) async {
+    if (playlistIds.isEmpty) return 0;
+    if (playlistIds.length == 1) return playPlaylistById(playlistIds.first);
+
+    final playlistApi = ref.read(playlistApiProvider);
+    const firstPageLimit = 10;
+    const batchLimit = 100;
+    const maxRetries = 3;
+
+    debugPrint(
+      '[Player] playMultiplePlaylistsById: ${playlistIds.length} playlists',
+    );
+    _consecutiveFailures = 0;
+
+    try {
+      final firstId = playlistIds.first;
+      final firstPageResponse = await playlistApi.getPlaylistSongs(
+        firstId,
+        limit: firstPageLimit,
+        offset: 0,
+      );
+      final firstPageSongs = firstPageResponse.songs;
+      final firstTotal = firstPageResponse.total;
+
+      if (firstPageSongs.isEmpty) {
+        debugPrint('[Player] playMultiplePlaylistsById: first playlist empty');
+        return 0;
+      }
+
+      await playPlaylist(firstPageSongs);
+      final generation = _loadGeneration;
+
+      _loadRemainingMultiplePlaylists(
+        playlistIds,
+        playlistApi,
+        firstPageSongs.length,
+        firstTotal,
+        generation,
+        batchLimit,
+        maxRetries,
+      );
+
+      return firstTotal;
+    } catch (e, st) {
+      debugPrint('[Player] playMultiplePlaylistsById error: $e\n$st');
+      return -1;
+    }
+  }
+
+  /// 后台加载多歌单的剩余歌曲
+  Future<void> _loadRemainingMultiplePlaylists(
+    List<int> playlistIds,
+    PlaylistApi playlistApi,
+    int firstPlaylistOffset,
+    int firstPlaylistTotal,
+    int generation,
+    int batchLimit,
+    int maxRetries,
+  ) async {
+    try {
+      // 加载第一个歌单的剩余歌曲
+      int offset = firstPlaylistOffset;
+      while (offset < firstPlaylistTotal) {
+        if (_loadGeneration != generation) return;
+        final response = await _fetchWithRetry(
+          () => playlistApi.getPlaylistSongs(
+            playlistIds.first,
+            limit: batchLimit,
+            offset: offset,
+          ),
+          maxRetries,
+        );
+        if (_loadGeneration != generation) return;
+        if (response.songs.isEmpty) break;
+        addToPlaylist(response.songs);
+        offset += batchLimit;
+      }
+
+      // 依次加载后续歌单的全部歌曲
+      for (int i = 1; i < playlistIds.length; i++) {
+        if (_loadGeneration != generation) return;
+        final playlistId = playlistIds[i];
+        debugPrint(
+          '[Player] _loadRemainingMultiplePlaylists: loading playlist $playlistId (${i + 1}/${playlistIds.length})',
+        );
+
+        int playlistOffset = 0;
+        while (true) {
+          if (_loadGeneration != generation) return;
+          final response = await _fetchWithRetry(
+            () => playlistApi.getPlaylistSongs(
+              playlistId,
+              limit: batchLimit,
+              offset: playlistOffset,
+            ),
+            maxRetries,
+          );
+          if (_loadGeneration != generation) return;
+          if (response.songs.isEmpty) break;
+          addToPlaylist(response.songs);
+          playlistOffset += batchLimit;
+          if (playlistOffset >= response.total) break;
+        }
+      }
+
+      debugPrint(
+        '[Player] _loadRemainingMultiplePlaylists: done, total=${state.playlist.length}',
+      );
+    } catch (e, st) {
+      debugPrint(
+        '[Player] _loadRemainingMultiplePlaylists: failed: $e\n$st',
+      );
+    }
+    if (_loadGeneration == generation) {
+      _savePlaybackState();
+    }
+  }
+
+  /// 带重试的歌曲批次加载
+  Future<SongListResponse> _fetchWithRetry(
+    Future<SongListResponse> Function() fetch,
+    int maxRetries,
+  ) async {
+    for (int retry = 0; retry < maxRetries; retry++) {
+      try {
+        return await fetch();
+      } catch (e) {
+        if (retry == maxRetries - 1) rethrow;
+        await Future<void>.delayed(
+          Duration(milliseconds: 500 * (retry + 1)),
+        );
+      }
+    }
+    throw StateError('unreachable');
   }
 
   /// 后台异步加载剩余歌曲并追加到播放列表，完成后调用 touchPlaylist
@@ -810,7 +948,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
   /// 返回总歌曲数（-1 表示失败）
   Future<int> playAllSongs({String? keyword, String? type}) async {
     final songsApi = ref.read(songsApiProvider);
-    const firstPageLimit = 100;
+    const firstPageLimit = 10;
 
     debugPrint('[Player] playAllSongs: start, keyword=$keyword, type=$type');
     _consecutiveFailures = 0;
