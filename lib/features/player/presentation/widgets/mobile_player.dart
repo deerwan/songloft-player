@@ -122,14 +122,14 @@ class _MobilePlayerState extends ConsumerState<MobilePlayer>
     final song = state.currentSong!;
     final coverUrl = song.coverUrl;
 
-    final paletteAsync = ref.watch(coverColorsProvider(coverUrl));
+    final paletteAsync = ref.watch(playerBackgroundPaletteProvider(song));
     final palette = paletteAsync.value;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       body: Stack(
         children: [
-          // 背景模糊封面
+          // 背景模糊封面 / 无封面时的动态渐变
           if (coverUrl != null)
             Positioned.fill(
               child: ImageFiltered(
@@ -141,6 +141,23 @@ class _MobilePlayerState extends ConsumerState<MobilePlayer>
                       (_, _, _) => Container(
                         color: theme.colorScheme.surfaceContainerHighest,
                       ),
+                ),
+              ),
+            )
+          else if (palette != null)
+            Positioned.fill(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 800),
+                curve: Curves.easeInOut,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment.topLeft,
+                    radius: 1.5,
+                    colors: [
+                      palette.dominantColor.withValues(alpha: 0.6),
+                      palette.darkMutedColor ?? palette.dominantColor,
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -155,8 +172,8 @@ class _MobilePlayerState extends ConsumerState<MobilePlayer>
                   end: Alignment.bottomCenter,
                   colors: [
                     (palette?.darkMutedColor ?? theme.colorScheme.surface)
-                        .withValues(alpha: 0.9),
-                    theme.colorScheme.surface.withValues(alpha: 0.95),
+                        .withValues(alpha: 0.7),
+                    theme.colorScheme.surface.withValues(alpha: 0.85),
                   ],
                 ),
               ),

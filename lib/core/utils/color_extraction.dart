@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:palette_generator/palette_generator.dart';
 
+import '../../shared/models/song.dart';
 import 'url_helper.dart';
 
 /// 封面颜色调色板
@@ -117,4 +118,57 @@ final coverColorsProvider = FutureProvider.family<CoverPalette?, String?>((
     debugPrint('[ColorExtraction] Failed to extract colors from $coverUrl: $e');
     return null;
   }
+});
+
+/// FNV-1a 32-bit hash — deterministic across platforms unlike String.hashCode
+int _fnv1a32(String input) {
+  var hash = 0x811c9dc5;
+  for (var i = 0; i < input.length; i++) {
+    hash ^= input.codeUnitAt(i);
+    hash = (hash * 0x01000193) & 0xFFFFFFFF;
+  }
+  return hash;
+}
+
+/// Generate a deterministic CoverPalette from song metadata.
+/// Used as fallback when no cover art is available.
+CoverPalette generatePaletteFromMetadata({
+  required int songId,
+  required String title,
+  String? artist,
+}) {
+  final seed = '$songId|$title|${artist ?? ''}';
+  final hash = _fnv1a32(seed);
+  final hue = (hash % 360).abs().toDouble();
+
+  final dominantColor = HSLColor.fromAHSL(1.0, hue, 0.5, 0.4).toColor();
+  final vibrantColor = HSLColor.fromAHSL(1.0, hue, 0.7, 0.5).toColor();
+  final lightVibrantColor = HSLColor.fromAHSL(1.0, hue, 0.6, 0.7).toColor();
+  final darkMutedColor = HSLColor.fromAHSL(1.0, hue, 0.3, 0.2).toColor();
+  final mutedColor = HSLColor.fromAHSL(1.0, hue, 0.25, 0.35).toColor();
+
+  return CoverPalette(
+    dominantColor: dominantColor,
+    vibrantColor: vibrantColor,
+    lightVibrantColor: lightVibrantColor,
+    darkMutedColor: darkMutedColor,
+    mutedColor: mutedColor,
+    onImageColor: Colors.white,
+  );
+}
+
+/// Unified palette provider for player background.
+/// Returns cover-extracted palette when available, otherwise metadata-derived.
+final playerBackgroundPaletteProvider =
+    FutureProvider.family<CoverPalette, Song>((ref, song) async {
+  if (song.coverUrl != null && song.coverUrl!.isNotEmpty) {
+    final coverPalette =
+        await ref.watch(coverColorsProvider(song.coverUrl).future);
+    if (coverPalette != null) return coverPalette;
+  }
+  return generatePaletteFromMetadata(
+    songId: song.id,
+    title: song.title,
+    artist: song.artist,
+  );
 });

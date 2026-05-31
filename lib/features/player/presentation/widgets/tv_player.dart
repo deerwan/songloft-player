@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/tv_theme.dart';
+import '../../../../core/utils/color_extraction.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/url_helper.dart';
 import '../../../../shared/widgets/tv_focusable.dart';
@@ -42,10 +43,13 @@ class _TvPlayerState extends ConsumerState<TvPlayer> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // 获取封面 URL
+    // 获取封面 URL 和动态调色板
     String? coverUrl;
+    CoverPalette? palette;
     if (state.hasSong) {
       coverUrl = state.currentSong!.coverUrl;
+      palette =
+          ref.watch(playerBackgroundPaletteProvider(state.currentSong!)).value;
     }
     return Scaffold(
       body: Container(
@@ -55,7 +59,8 @@ class _TvPlayerState extends ConsumerState<TvPlayer> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              colorScheme.primaryContainer.withValues(alpha: 0.3),
+              (palette?.darkMutedColor ?? colorScheme.primaryContainer)
+                  .withValues(alpha: 0.4),
               colorScheme.surface,
               colorScheme.surface,
             ],
