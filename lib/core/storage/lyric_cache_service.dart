@@ -110,6 +110,23 @@ class LyricCacheService {
     }
   }
 
+  /// 按 URL 清除单条缓存（内存 + 文件）。
+  /// 用户手动调整歌词后调用，避免下次进入歌词页拿到旧的缓存内容。
+  Future<void> remove(String url) async {
+    _memoryCache.remove(url);
+    if (kIsWeb) return;
+    await _ensureInitialized();
+    final file = _getCacheFile(url);
+    if (file == null) return;
+    try {
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (e) {
+      debugPrint('[LyricCacheService] 删除缓存文件失败: $e');
+    }
+  }
+
   /// 清理全部歌词缓存
   Future<void> clear() async {
     _memoryCache.clear();

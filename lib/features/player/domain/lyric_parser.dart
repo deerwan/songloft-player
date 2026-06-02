@@ -71,6 +71,41 @@ class LyricParser {
     return lyrics;
   }
 
+  /// 把已解析的 LyricLine 列表反向序列化成 LRC 文本。
+  ///
+  /// 输出形如 `[mm:ss.xxx]text\n`，毫秒固定 3 位补零；
+  /// 调用方传入的列表会先按 time 排序拷贝，原列表不被修改。
+  /// 时间为负的行会被截断到 Duration.zero（不应该发生，作为防御性兜底）。
+  static String stringify(List<LyricLine> lines) {
+    if (lines.isEmpty) return '';
+    final sorted = [...lines]..sort((a, b) => a.time.compareTo(b.time));
+    final buf = StringBuffer();
+    for (final l in sorted) {
+      final t = l.time < Duration.zero ? Duration.zero : l.time;
+      final totalMs = t.inMilliseconds;
+      final minutes = (totalMs ~/ 60000).toString().padLeft(2, '0');
+      final seconds = ((totalMs ~/ 1000) % 60).toString().padLeft(2, '0');
+      final ms = (totalMs % 1000).toString().padLeft(3, '0');
+      buf.write('[$minutes:$seconds.$ms]');
+      buf.write(l.text);
+      buf.write('\n');
+    }
+    return buf.toString();
+  }
+
+  /// 整体平移歌词时间戳。负偏移导致时间小于 0 时截断到 Duration.zero。
+  static List<LyricLine> applyOffset(List<LyricLine> lines, Duration offset) {
+    return [
+      for (final l in lines)
+        LyricLine(
+          time: (l.time + offset) < Duration.zero
+              ? Duration.zero
+              : (l.time + offset),
+          text: l.text,
+        ),
+    ];
+  }
+
   /// 根据当前播放位置查找应高亮的歌词行索引
   ///
   /// 返回当前时间点应该显示的歌词行索引

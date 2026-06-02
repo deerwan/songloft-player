@@ -255,6 +255,8 @@ class _TvPlayerState extends ConsumerState<TvPlayer> {
         lyricUrl: song.lyricUrl,
         currentPosition: state.currentTime,
         onSeek: notifier.seek,
+        song: song,
+        editable: true,
       ),
     );
   }

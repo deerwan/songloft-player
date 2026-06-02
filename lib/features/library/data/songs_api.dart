@@ -163,6 +163,42 @@ class SongsApi {
     return Song.fromJson(response.data!);
   }
 
+  /// 更新歌曲歌词
+  ///
+  /// PUT /api/v1/songs/{id}/lyrics
+  ///
+  /// [lyricSource] 必填，常见值：'manual'（用户手动调整,scanner 不会覆盖）、
+  /// 'cached'（远程歌词缓存到本地）、'url'（运行时从 URL 拉取，传 lyricRemoteUrl）。
+  /// [lyric]/[tlyric]/[rlyric]/[lxlyric] 仅在非 url 来源时生效；它们会被后端
+  /// 包成 LyricPayload JSON 写入 songs.lyric 列。
+  ///
+  /// 返回 `fileWriteStatus`：'written' / 'skipped' / 'failed' —— 表示后端
+  /// 是否把元数据回写到本地音频文件，由调用方按状态显示对应 toast。
+  Future<({String fileWriteStatus})> updateSongLyrics(
+    int id, {
+    required String lyricSource,
+    String? lyric,
+    String? tlyric,
+    String? rlyric,
+    String? lxlyric,
+    String? lyricRemoteUrl,
+  }) async {
+    final data = <String, dynamic>{
+      'lyric_source': lyricSource,
+      if (lyric != null) 'lyric': lyric,
+      if (tlyric != null) 'tlyric': tlyric,
+      if (rlyric != null) 'rlyric': rlyric,
+      if (lxlyric != null) 'lxlyric': lxlyric,
+      if (lyricRemoteUrl != null) 'lyric_remote_url': lyricRemoteUrl,
+    };
+    final response = await dio.put<Map<String, dynamic>>(
+      '${AppConfig.apiPrefix}/songs/$id/lyrics',
+      data: data,
+    );
+    final status = response.data?['file_write_status'] as String? ?? 'skipped';
+    return (fileWriteStatus: status);
+  }
+
   /// 删除歌曲
   Future<void> deleteSong(int id) async {
     await dio.delete('${AppConfig.apiPrefix}/songs/$id');

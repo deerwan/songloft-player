@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/storage/lyric_cache_service.dart';
 import '../../../../core/utils/url_helper.dart';
+import '../../../../shared/models/song.dart';
 import '../../domain/lyric_parser.dart';
+import '../lyric_adjust_page.dart';
 
 /// 歌词显示组件
 ///
@@ -14,6 +16,9 @@ import '../../domain/lyric_parser.dart';
 /// 点击歌词行可跳转到对应时间点播放。
 ///
 /// 通过 [lyricUrl] 从网络加载歌词（后端统一端点 /api/v1/songs/{id}/lyric）。
+///
+/// 当 [editable] 为 true 且 [song] 是本地歌曲时，右上角显示「调整」按钮，
+/// 点击进入 LyricAdjustPage 编辑歌词时间戳。保存后会自动重新拉取歌词。
 class LyricsView extends StatefulWidget {
   /// 歌词URL（后端统一端点，相对路径）
   final String? lyricUrl;
@@ -24,11 +29,20 @@ class LyricsView extends StatefulWidget {
   /// 点击歌词行时的回调，传入被点击行的时间点
   final ValueChanged<Duration>? onSeek;
 
+  /// 关联的歌曲对象。仅当 [editable] 为 true 时用于决定是否展示「调整」按钮，
+  /// 以及把当前歌曲传给 LyricAdjustPage。
+  final Song? song;
+
+  /// 是否允许编辑歌词。即使为 true，也只有 song.type == 'local' 才会显示按钮。
+  final bool editable;
+
   const LyricsView({
     super.key,
     this.lyricUrl,
     required this.currentPosition,
     this.onSeek,
+    this.song,
+    this.editable = false,
   });
 
   @override
@@ -261,6 +275,40 @@ class _LyricsViewState extends State<LyricsView> {
     }
   }
 
+  /// 是否应展示「调整」按钮：开启了 editable、有 song、是本地歌曲、且当前已成功加载到歌词
+  bool get _shouldShowEditButton {
+    if (!widget.editable) return false;
+    final s = widget.song;
+    if (s == null || s.type != 'local') return false;
+    return _lyrics.isNotEmpty && !_isLoadingFromUrl && !_loadFailed;
+  }
+
+  /// 进入歌词调整页；保存成功（pop 返回 true）后强制重新拉取歌词，
+  /// 让 _initLyrics 走 fetch 分支拿到调整后的内容。
+  Future<void> _openAdjustPage() async {
+    final song = widget.song;
+    final lyricText = _fetchedLyricText;
+    if (song == null || lyricText == null || lyricText.isEmpty) return;
+
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => LyricAdjustPage(
+          song: song,
+          originalLyric: lyricText,
+        ),
+      ),
+    );
+
+    if (saved == true && mounted) {
+      // 重置内部缓存指针，让 _initLyrics 重新走 fetch 拿最新文本
+      setState(() {
+        _fetchedLyricText = null;
+        _lastFetchedUrl = null;
+      });
+      _initLyrics();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -317,7 +365,7 @@ class _LyricsViewState extends State<LyricsView> {
       );
     }
 
-    return LayoutBuilder(
+    final body = LayoutBuilder(
       builder: (context, constraints) {
         // 上下 padding = (视口高度 - 行高) / 2，让任意一行（含首尾）都能滚到视图正中央
         final verticalPadding = ((constraints.maxHeight - _lineHeight) / 2)
@@ -379,6 +427,28 @@ class _LyricsViewState extends State<LyricsView> {
           ),
         );
       },
+    );
+
+    if (!_shouldShowEditButton) return body;
+
+    // 在歌词列表右上角浮一个调整按钮
+    return Stack(
+      children: [
+        Positioned.fill(child: body),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: Material(
+            color: Colors.transparent,
+            child: IconButton(
+              icon: const Icon(Icons.tune, size: 22),
+              tooltip: '调整歌词',
+              color: theme.colorScheme.primary,
+              onPressed: _openAdjustPage,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

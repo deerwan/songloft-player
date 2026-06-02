@@ -266,6 +266,8 @@ class _DesktopFullPlayerState extends ConsumerState<DesktopFullPlayer>
                             lyricUrl: song.lyricUrl,
                             currentPosition: state.currentTime,
                             onSeek: notifier.seek,
+                            song: song,
+                            editable: true,
                           ),
                         ),
                       ],

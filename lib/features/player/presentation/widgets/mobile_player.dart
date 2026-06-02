@@ -238,6 +238,8 @@ class _MobilePlayerState extends ConsumerState<MobilePlayer>
                               lyricUrl: song.lyricUrl,
                               currentPosition: state.currentTime,
                               onSeek: notifier.seek,
+                              song: song,
+                              editable: true,
                             ),
                           ],
                         ),

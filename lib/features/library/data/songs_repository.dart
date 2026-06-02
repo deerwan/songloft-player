@@ -125,6 +125,31 @@ class SongsRepository {
     }
   }
 
+  /// 更新歌曲歌词（透传 SongsApi.updateSongLyrics，包错误处理）
+  Future<({String fileWriteStatus})> updateSongLyrics(
+    int id, {
+    required String lyricSource,
+    String? lyric,
+    String? tlyric,
+    String? rlyric,
+    String? lxlyric,
+    String? lyricRemoteUrl,
+  }) async {
+    try {
+      return await songsApi.updateSongLyrics(
+        id,
+        lyricSource: lyricSource,
+        lyric: lyric,
+        tlyric: tlyric,
+        rlyric: rlyric,
+        lxlyric: lxlyric,
+        lyricRemoteUrl: lyricRemoteUrl,
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   /// 删除歌曲
   Future<void> deleteSong(int id) async {
     try {
