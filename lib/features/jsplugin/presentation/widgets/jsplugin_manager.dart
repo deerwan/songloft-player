@@ -21,6 +21,18 @@ class _JSProxyOption {
   const _JSProxyOption({required this.label, required this.value});
 }
 
+/// 预设 GitHub 代理列表（单插件更新和批量更新共用）
+const List<_JSProxyOption> _kGithubProxies = [
+  _JSProxyOption(label: '直连 (不使用代理)', value: ''),
+  _JSProxyOption(label: 'ghproxy.com', value: 'https://ghproxy.com/'),
+  _JSProxyOption(label: 'ghfast.top', value: 'https://ghfast.top/'),
+  _JSProxyOption(label: 'gh.con.sh', value: 'https://gh.con.sh/'),
+  _JSProxyOption(
+    label: 'mirror.ghproxy.com',
+    value: 'https://mirror.ghproxy.com/',
+  ),
+];
+
 /// JS 插件管理组件
 class JSPluginManager extends ConsumerStatefulWidget {
   const JSPluginManager({super.key});
@@ -38,6 +50,9 @@ class _JSPluginManagerState extends ConsumerState<JSPluginManager> {
       leading: const Icon(Icons.javascript),
       title: const Text('JS 插件管理'),
       subtitle: const Text('管理已安装的 JS 插件'),
+      onExpansionChanged: (expanded) {
+        if (expanded) ref.invalidate(jsPluginsProvider);
+      },
       children: [
         // 顶部操作栏
         Padding(
@@ -58,10 +73,10 @@ class _JSPluginManagerState extends ConsumerState<JSPluginManager> {
                         icon: const Icon(Icons.download),
                         label: const Text('获取插件'),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.refresh),
-                        onPressed: () => ref.invalidate(jsPluginsProvider),
-                        tooltip: '刷新',
+                      OutlinedButton.icon(
+                        onPressed: _showBatchUpdateDialog,
+                        icon: const Icon(Icons.system_update),
+                        label: const Text('全部更新'),
                       ),
                     ],
                   )
@@ -79,10 +94,10 @@ class _JSPluginManagerState extends ConsumerState<JSPluginManager> {
                         label: const Text('获取插件'),
                       ),
                       const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.refresh),
-                        onPressed: () => ref.invalidate(jsPluginsProvider),
-                        tooltip: '刷新',
+                      OutlinedButton.icon(
+                        onPressed: _showBatchUpdateDialog,
+                        icon: const Icon(Icons.system_update),
+                        label: const Text('全部更新'),
                       ),
                     ],
                   ),
@@ -143,6 +158,17 @@ class _JSPluginManagerState extends ConsumerState<JSPluginManager> {
     } else if (mounted) {
       ResponsiveSnackBar.show(context, message: '无法打开链接: $_pluginDownloadUrl');
     }
+  }
+
+  void _showBatchUpdateDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _JSPluginBatchUpdateDialog(
+        pluginApi: ref.read(jsPluginApiProvider),
+        onUpdateComplete: () => ref.invalidate(jsPluginsProvider),
+      ),
+    );
   }
 
   Widget _buildPluginList(List<JSPlugin> plugins) {
@@ -816,17 +842,6 @@ class _JSPluginUpdateDialog extends StatefulWidget {
 }
 
 class _JSPluginUpdateDialogState extends State<_JSPluginUpdateDialog> {
-  static const List<_JSProxyOption> _presetProxies = [
-    _JSProxyOption(label: '直连 (不使用代理)', value: ''),
-    _JSProxyOption(label: 'ghproxy.com', value: 'https://ghproxy.com/'),
-    _JSProxyOption(label: 'ghfast.top', value: 'https://ghfast.top/'),
-    _JSProxyOption(label: 'gh.con.sh', value: 'https://gh.con.sh/'),
-    _JSProxyOption(
-      label: 'mirror.ghproxy.com',
-      value: 'https://mirror.ghproxy.com/',
-    ),
-  ];
-
   bool _isChecking = false;
   bool _isUpdating = false;
   String? _error;
@@ -841,8 +856,8 @@ class _JSPluginUpdateDialogState extends State<_JSPluginUpdateDialog> {
       return _customProxyController.text.trim();
     }
     if (_selectedProxyIndex >= 0 &&
-        _selectedProxyIndex < _presetProxies.length) {
-      return _presetProxies[_selectedProxyIndex].value;
+        _selectedProxyIndex < _kGithubProxies.length) {
+      return _kGithubProxies[_selectedProxyIndex].value;
     }
     return '';
   }
@@ -1013,8 +1028,8 @@ class _JSPluginUpdateDialogState extends State<_JSPluginUpdateDialog> {
             },
             child: Column(
               children: [
-                ...List.generate(_presetProxies.length, (index) {
-                  final proxy = _presetProxies[index];
+                ...List.generate(_kGithubProxies.length, (index) {
+                  final proxy = _kGithubProxies[index];
                   return RadioListTile<int>(
                     title: Text(proxy.label, style: theme.textTheme.bodyMedium),
                     value: index,
@@ -1201,6 +1216,317 @@ class _JSPluginUpdateDialogState extends State<_JSPluginUpdateDialog> {
           minimumSize: context.responsiveButtonMinSize,
         ),
         child: const Text('检查更新'),
+      ),
+    ];
+  }
+}
+
+/// JS 插件批量更新对话框
+class _JSPluginBatchUpdateDialog extends StatefulWidget {
+  final JSPluginApi pluginApi;
+  final VoidCallback onUpdateComplete;
+
+  const _JSPluginBatchUpdateDialog({
+    required this.pluginApi,
+    required this.onUpdateComplete,
+  });
+
+  @override
+  State<_JSPluginBatchUpdateDialog> createState() =>
+      _JSPluginBatchUpdateDialogState();
+}
+
+class _JSPluginBatchUpdateDialogState
+    extends State<_JSPluginBatchUpdateDialog> {
+  int _selectedProxyIndex = 0;
+  final TextEditingController _customProxyController = TextEditingController();
+
+  bool _isUpdating = false;
+  JSPluginBatchUpdateResponse? _response;
+  String? _error;
+
+  String get _effectiveProxy {
+    if (_selectedProxyIndex == -1) {
+      return _customProxyController.text.trim();
+    }
+    if (_selectedProxyIndex >= 0 &&
+        _selectedProxyIndex < _kGithubProxies.length) {
+      return _kGithubProxies[_selectedProxyIndex].value;
+    }
+    return '';
+  }
+
+  @override
+  void dispose() {
+    _customProxyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _executeBatchUpdate() async {
+    final proxy = _effectiveProxy;
+    setState(() {
+      _isUpdating = true;
+      _error = null;
+      _response = null;
+    });
+
+    try {
+      final result = await widget.pluginApi
+          .updateAllPlugins(githubProxy: proxy.isNotEmpty ? proxy : null)
+          .timeout(const Duration(seconds: 300));
+      if (mounted) {
+        setState(() => _response = result);
+        widget.onUpdateComplete();
+      }
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = '批量更新失败: ${e.message}');
+    } on TimeoutException {
+      if (mounted) setState(() => _error = '批量更新超时，请重试');
+    } catch (e) {
+      if (mounted) setState(() => _error = '批量更新失败: $e');
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return AlertDialog(
+      title: const Row(
+        children: [
+          Icon(Icons.system_update),
+          SizedBox(width: 8),
+          Text('全部更新'),
+        ],
+      ),
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: context.responsiveDialogMaxWidth,
+          maxHeight: MediaQuery.of(context).size.height * 0.6,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_error != null)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: colorScheme.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: TextStyle(color: colorScheme.onErrorContainer),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (_response == null && !_isUpdating) _buildProxySelector(theme),
+              if (_isUpdating)
+                const Center(
+                  child: Column(
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('正在检查并更新所有插件...'),
+                      SizedBox(height: 8),
+                      Text('请勿关闭此对话框', style: TextStyle(color: Colors.grey)),
+                    ],
+                  ),
+                )
+              else if (_response != null)
+                _buildResults(_response!),
+            ],
+          ),
+        ),
+      ),
+      actions: _buildActions(),
+    );
+  }
+
+  Widget _buildProxySelector(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('GitHub 代理', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 8),
+          RadioGroup<int>(
+            groupValue: _selectedProxyIndex,
+            onChanged: (value) {
+              if (value != null) setState(() => _selectedProxyIndex = value);
+            },
+            child: Column(
+              children: [
+                ...List.generate(_kGithubProxies.length, (index) {
+                  final proxy = _kGithubProxies[index];
+                  return RadioListTile<int>(
+                    title: Text(proxy.label, style: theme.textTheme.bodyMedium),
+                    value: index,
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  );
+                }),
+                RadioListTile<int>(
+                  title: Text('自定义代理', style: theme.textTheme.bodyMedium),
+                  value: -1,
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+          ),
+          if (_selectedProxyIndex == -1)
+            Padding(
+              padding: const EdgeInsets.only(left: 16, top: 4),
+              child: TextField(
+                controller: _customProxyController,
+                decoration: const InputDecoration(
+                  hintText: 'https://your-proxy.com/',
+                  helperText: '输入代理地址，如 https://ghproxy.com/',
+                  helperMaxLines: 2,
+                  isDense: true,
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                ),
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResults(JSPluginBatchUpdateResponse response) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem('已更新', response.updated, Colors.green),
+              _buildStatItem('失败', response.failed, colorScheme.error),
+              _buildStatItem('无需更新', response.skipped, Colors.grey),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...response.results.map((r) => _buildResultItem(r, theme)),
+      ],
+    );
+  }
+
+  Widget _buildStatItem(String label, int count, Color color) {
+    return Column(
+      children: [
+        Text(
+          '$count',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget _buildResultItem(JSPluginBatchUpdateResult r, ThemeData theme) {
+    final IconData icon;
+    final Color color;
+    final String subtitle;
+
+    if (r.success) {
+      icon = Icons.check_circle;
+      color = Colors.green;
+      subtitle = 'v${r.currentVersion} → v${r.newVersion}';
+    } else if (r.hasUpdate) {
+      icon = Icons.error;
+      color = theme.colorScheme.error;
+      subtitle = r.error ?? '更新失败';
+    } else if (r.error != null) {
+      icon = Icons.warning;
+      color = Colors.orange;
+      subtitle = r.error!;
+    } else {
+      icon = Icons.check;
+      color = Colors.grey;
+      subtitle = 'v${r.currentVersion} 已是最新';
+    }
+
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon, color: color, size: 20),
+      title: Text(
+        r.pluginName.isNotEmpty ? r.pluginName : r.entryPath,
+        style: theme.textTheme.bodyMedium,
+      ),
+      subtitle: Text(subtitle, style: theme.textTheme.bodySmall),
+    );
+  }
+
+  List<Widget> _buildActions() {
+    if (_isUpdating) return [];
+
+    if (_response != null) {
+      return [
+        FilledButton(
+          onPressed: () => Navigator.pop(context),
+          style: FilledButton.styleFrom(
+            minimumSize: context.responsiveButtonMinSize,
+          ),
+          child: const Text('关闭'),
+        ),
+      ];
+    }
+
+    return [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        style: TextButton.styleFrom(
+          minimumSize: context.responsiveButtonMinSize,
+        ),
+        child: const Text('取消'),
+      ),
+      FilledButton(
+        onPressed: _executeBatchUpdate,
+        style: FilledButton.styleFrom(
+          minimumSize: context.responsiveButtonMinSize,
+        ),
+        child: const Text('开始更新'),
       ),
     ];
   }

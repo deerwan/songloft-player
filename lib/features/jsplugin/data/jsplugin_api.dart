@@ -138,6 +138,76 @@ class JSPluginUploadResponse {
   }
 }
 
+/// 单个插件批量更新结果
+class JSPluginBatchUpdateResult {
+  final int pluginId;
+  final String pluginName;
+  final String entryPath;
+  final bool success;
+  final bool hasUpdate;
+  final String currentVersion;
+  final String newVersion;
+  final String? error;
+
+  JSPluginBatchUpdateResult({
+    required this.pluginId,
+    required this.pluginName,
+    required this.entryPath,
+    required this.success,
+    required this.hasUpdate,
+    required this.currentVersion,
+    required this.newVersion,
+    this.error,
+  });
+
+  factory JSPluginBatchUpdateResult.fromJson(Map<String, dynamic> json) {
+    return JSPluginBatchUpdateResult(
+      pluginId: (json['plugin_id'] as num?)?.toInt() ?? 0,
+      pluginName: json['plugin_name'] as String? ?? '',
+      entryPath: json['entry_path'] as String? ?? '',
+      success: json['success'] as bool? ?? false,
+      hasUpdate: json['has_update'] as bool? ?? false,
+      currentVersion: json['current_version'] as String? ?? '',
+      newVersion: json['new_version'] as String? ?? '',
+      error: json['error'] as String?,
+    );
+  }
+}
+
+/// 批量更新响应
+class JSPluginBatchUpdateResponse {
+  final int total;
+  final int updated;
+  final int failed;
+  final int skipped;
+  final List<JSPluginBatchUpdateResult> results;
+  final String message;
+
+  JSPluginBatchUpdateResponse({
+    required this.total,
+    required this.updated,
+    required this.failed,
+    required this.skipped,
+    required this.results,
+    required this.message,
+  });
+
+  factory JSPluginBatchUpdateResponse.fromJson(Map<String, dynamic> json) {
+    return JSPluginBatchUpdateResponse(
+      total: json['total'] as int? ?? 0,
+      updated: json['updated'] as int? ?? 0,
+      failed: json['failed'] as int? ?? 0,
+      skipped: json['skipped'] as int? ?? 0,
+      results: (json['results'] as List<dynamic>?)
+              ?.map((e) =>
+                  JSPluginBatchUpdateResult.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      message: json['message'] as String? ?? '',
+    );
+  }
+}
+
 /// JS 插件更新检查结果
 class JSPluginUpdateCheck {
   final bool hasUpdate;
@@ -305,6 +375,28 @@ class JSPluginApi {
         body['github_proxy'] = githubProxy;
       }
       await dio.post('${AppConfig.apiPrefix}/jsplugins/$id/update', data: body);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// 批量更新所有插件
+  /// POST /api/v1/jsplugins/update-all
+  Future<JSPluginBatchUpdateResponse> updateAllPlugins({
+    String? githubProxy,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (githubProxy != null && githubProxy.isNotEmpty) {
+        body['github_proxy'] = githubProxy;
+      }
+      final response = await dio.post(
+        '${AppConfig.apiPrefix}/jsplugins/update-all',
+        data: body,
+      );
+      return JSPluginBatchUpdateResponse.fromJson(
+        response.data as Map<String, dynamic>,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
