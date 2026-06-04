@@ -259,6 +259,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				401A0194E2AACD8172951393 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -320,6 +321,7 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
+				B2A54A536F60B30FCB330C93 /* SongloftLiveActivity */,
 			);
 		};
 /* End PBXProject section */
@@ -820,7 +822,7 @@
 				INFOPLIST_FILE = SongloftLiveActivity/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Songloft Live Activity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -848,7 +850,7 @@
 				INFOPLIST_FILE = SongloftLiveActivity/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Songloft Live Activity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -874,7 +876,7 @@
 				INFOPLIST_FILE = SongloftLiveActivity/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Songloft Live Activity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
