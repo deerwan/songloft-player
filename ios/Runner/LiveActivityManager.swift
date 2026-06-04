@@ -76,7 +76,7 @@ class LiveActivityManager: NSObject {
     // MARK: - Public API
 
     func isSupported() -> Bool {
-        if #available(iOS 16.1, *) {
+        if #available(iOS 16.2, *) {
             #if canImport(ActivityKit)
             return ActivityAuthorizationInfo().areActivitiesEnabled
             #else
@@ -89,7 +89,7 @@ class LiveActivityManager: NSObject {
     func startActivity(title: String, artist: String, lyricLine: String, artUrl: String) {
         guard isSupported() else { return }
 
-        if #available(iOS 16.1, *) {
+        if #available(iOS 16.2, *) {
             #if canImport(ActivityKit)
             endActivityInternal()
 
@@ -121,7 +121,7 @@ class LiveActivityManager: NSObject {
     func updateLyric(lyricLine: String, nextLine: String) {
         guard isSupported() else { return }
 
-        if #available(iOS 16.1, *) {
+        if #available(iOS 16.2, *) {
             #if canImport(ActivityKit)
             guard let activity = currentActivity as? Activity<SongloftMusicAttributes> else { return }
 
@@ -143,7 +143,7 @@ class LiveActivityManager: NSObject {
     func updatePlaybackState(isPlaying: Bool, progress: Double) {
         guard isSupported() else { return }
 
-        if #available(iOS 16.1, *) {
+        if #available(iOS 16.2, *) {
             #if canImport(ActivityKit)
             guard let activity = currentActivity as? Activity<SongloftMusicAttributes> else { return }
 
@@ -163,7 +163,7 @@ class LiveActivityManager: NSObject {
     }
 
     func endActivity() {
-        if #available(iOS 16.1, *) {
+        if #available(iOS 16.2, *) {
             #if canImport(ActivityKit)
             endActivityInternal()
             #endif
@@ -172,7 +172,7 @@ class LiveActivityManager: NSObject {
 
     // MARK: - Private
 
-    @available(iOS 16.1, *)
+    @available(iOS 16.2, *)
     private func endActivityInternal() {
         #if canImport(ActivityKit)
         guard let activity = currentActivity as? Activity<SongloftMusicAttributes> else { return }
