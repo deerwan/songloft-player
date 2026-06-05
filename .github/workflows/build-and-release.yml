@@ -179,9 +179,11 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $versionLine = Select-String -Path pubspec.yaml -Pattern '^version:' | Select-Object -First 1
+          $versionLine = (Select-String -Path pubspec.yaml -Pattern '^version:' | Select-Object -First 1).Line
           $version = ($versionLine -replace 'version:\s*', '') -replace '\+.*', ''
           echo "version=$version" >> $env:GITHUB_OUTPUT
+      - name: Setup NuGet
+        uses: nuget/setup-nuget@v2
       - run: flutter build windows --release --dart-define=FRONTEND_VERSION=${{ steps.version.outputs.version }}
       - name: Package ZIP (绿色便携包)
         shell: pwsh
