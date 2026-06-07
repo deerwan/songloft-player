@@ -36,6 +36,8 @@ class CacheManager extends ConsumerStatefulWidget {
 class _CacheManagerState extends ConsumerState<CacheManager> {
   bool _isCleaningServer = false;
   bool _isCleaningLocal = false;
+  bool _serverExpanded = false;
+  bool _localExpanded = false;
   int _localCacheSize = 0;
   bool _localCacheSizeLoaded = false;
   int _localCacheMaxSizeIndex = 2; // 默认 1 GB（索引 2）
@@ -300,10 +302,24 @@ class _CacheManagerState extends ConsumerState<CacheManager> {
           children: [
             Icon(Icons.cloud_outlined, size: 18, color: colorScheme.primary),
             const SizedBox(width: 8),
-            Text(
-              '服务端音乐缓存',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                '服务端音乐缓存',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () =>
+                  setState(() => _serverExpanded = !_serverExpanded),
+              icon: Icon(
+                _serverExpanded ? Icons.expand_less : Icons.tune,
+                size: 18,
+              ),
+              label: Text(_serverExpanded ? '收起' : '管理'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
               ),
             ),
           ],
@@ -364,63 +380,77 @@ class _CacheManagerState extends ConsumerState<CacheManager> {
           ),
         ),
 
-        const SizedBox(height: 16),
+        // 折叠区域：Slider + 清理按钮
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
 
-        // 最大缓存大小滑动条
-        configAsync.when(
-          data: (config) {
-            int currentIndex = _findSizeIndex(config.maxSize);
-            return StatefulBuilder(
-              builder: (context, setSliderState) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '最大缓存大小: ${_cacheSizeOptions[currentIndex].label}',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    Slider(
-                      value: currentIndex.toDouble(),
-                      min: 0,
-                      max: (_cacheSizeOptions.length - 1).toDouble(),
-                      divisions: _cacheSizeOptions.length - 1,
-                      label: _cacheSizeOptions[currentIndex].label,
-                      onChanged: (value) {
-                        setSliderState(() {
-                          currentIndex = value.round();
-                        });
-                      },
-                      onChangeEnd: (value) {
-                        final newMaxSize =
-                            _cacheSizeOptions[value.round()].value;
-                        _updateServerCacheConfig(newMaxSize);
-                      },
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-          loading: () => const SizedBox.shrink(),
-          error: (_, _) => const SizedBox.shrink(),
-        ),
+              // 最大缓存大小滑动条
+              configAsync.when(
+                data: (config) {
+                  int currentIndex = _findSizeIndex(config.maxSize);
+                  return StatefulBuilder(
+                    builder: (context, setSliderState) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '最大缓存大小: ${_cacheSizeOptions[currentIndex].label}',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          Slider(
+                            value: currentIndex.toDouble(),
+                            min: 0,
+                            max: (_cacheSizeOptions.length - 1).toDouble(),
+                            divisions: _cacheSizeOptions.length - 1,
+                            label: _cacheSizeOptions[currentIndex].label,
+                            onChanged: (value) {
+                              setSliderState(() {
+                                currentIndex = value.round();
+                              });
+                            },
+                            onChangeEnd: (value) {
+                              final newMaxSize =
+                                  _cacheSizeOptions[value.round()].value;
+                              _updateServerCacheConfig(newMaxSize);
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+              ),
 
-        const SizedBox(height: 8),
+              const SizedBox(height: 8),
 
-        // 清理按钮
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _isCleaningServer ? null : _cleanServerCache,
-            icon: _isCleaningServer
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.delete_outline),
-            label: Text(_isCleaningServer ? '清理中...' : '清理服务端缓存'),
+              // 清理按钮
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _isCleaningServer ? null : _cleanServerCache,
+                  icon: _isCleaningServer
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.delete_outline),
+                  label:
+                      Text(_isCleaningServer ? '清理中...' : '清理服务端缓存'),
+                ),
+              ),
+            ],
           ),
+          crossFadeState: _serverExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 200),
         ),
       ],
     );
@@ -439,10 +469,24 @@ class _CacheManagerState extends ConsumerState<CacheManager> {
               color: colorScheme.primary,
             ),
             const SizedBox(width: 8),
-            Text(
-              '本地缓存',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                '本地缓存',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () =>
+                  setState(() => _localExpanded = !_localExpanded),
+              icon: Icon(
+                _localExpanded ? Icons.expand_less : Icons.tune,
+                size: 18,
+              ),
+              label: Text(_localExpanded ? '收起' : '管理'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
               ),
             ),
           ],
@@ -475,46 +519,60 @@ class _CacheManagerState extends ConsumerState<CacheManager> {
           ),
         ),
 
-        const SizedBox(height: 16),
+        // 折叠区域：Slider + 清理按钮
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
 
-        // 最大本地缓存大小滑动条
-        if (_localConfigLoaded) ...[
-          Text(
-            '最大本地缓存大小: ${_cacheSizeOptions[_localCacheMaxSizeIndex].label}',
-            style: theme.textTheme.bodyMedium,
-          ),
-          Slider(
-            value: _localCacheMaxSizeIndex.toDouble(),
-            min: 0,
-            max: (_cacheSizeOptions.length - 1).toDouble(),
-            divisions: _cacheSizeOptions.length - 1,
-            label: _cacheSizeOptions[_localCacheMaxSizeIndex].label,
-            onChanged: (value) {
-              setState(() {
-                _localCacheMaxSizeIndex = value.round();
-              });
-            },
-            onChangeEnd: (value) {
-              _saveLocalCacheMaxSize(value.round());
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
+              // 最大本地缓存大小滑动条
+              if (_localConfigLoaded) ...[
+                Text(
+                  '最大本地缓存大小: ${_cacheSizeOptions[_localCacheMaxSizeIndex].label}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                Slider(
+                  value: _localCacheMaxSizeIndex.toDouble(),
+                  min: 0,
+                  max: (_cacheSizeOptions.length - 1).toDouble(),
+                  divisions: _cacheSizeOptions.length - 1,
+                  label: _cacheSizeOptions[_localCacheMaxSizeIndex].label,
+                  onChanged: (value) {
+                    setState(() {
+                      _localCacheMaxSizeIndex = value.round();
+                    });
+                  },
+                  onChangeEnd: (value) {
+                    _saveLocalCacheMaxSize(value.round());
+                  },
+                ),
+              ],
 
-        // 清理按钮
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _isCleaningLocal ? null : _cleanLocalCache,
-            icon: _isCleaningLocal
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.delete_outline),
-            label: Text(_isCleaningLocal ? '清理中...' : '清理本地缓存'),
+              const SizedBox(height: 8),
+
+              // 清理按钮
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _isCleaningLocal ? null : _cleanLocalCache,
+                  icon: _isCleaningLocal
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.delete_outline),
+                  label: Text(_isCleaningLocal ? '清理中...' : '清理本地缓存'),
+                ),
+              ),
+            ],
           ),
+          crossFadeState: _localExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 200),
         ),
       ],
     );
