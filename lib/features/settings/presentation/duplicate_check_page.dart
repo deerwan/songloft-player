@@ -305,7 +305,7 @@ class _DuplicateCheckPageState extends ConsumerState<DuplicateCheckPage> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          if (!status.fpcalcAvailable) ...[
+          if (!status.chromaprintAvailable) ...[
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -318,7 +318,7 @@ class _DuplicateCheckPageState extends ConsumerState<DuplicateCheckPage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '需要安装 fpcalc 才能使用音频指纹检测。Docker 用户升级到最新镜像即可。',
+                      '需要安装 ffmpeg（含 chromaprint 支持）才能使用音频指纹检测。Docker 用户升级到最新镜像即可。',
                       style: TextStyle(color: colorScheme.onSecondaryContainer),
                     ),
                   ),
@@ -330,7 +330,7 @@ class _DuplicateCheckPageState extends ConsumerState<DuplicateCheckPage> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: status.fpcalcAvailable
+              onPressed: status.chromaprintAvailable
                   ? (status.missing > 0 ? _startCompute : _loadDuplicates)
                   : null,
               icon: const Icon(Icons.fingerprint),

@@ -76,6 +76,7 @@ class ShellLayout extends ConsumerWidget {
     );
 
     final isPluginTab = location.startsWith('/plugin-tab/');
+    final isSettings = location.startsWith('/settings');
 
     return AdaptiveScaffold(
       body: child,
@@ -86,7 +87,7 @@ class ShellLayout extends ConsumerWidget {
           context.go(activeDest.indexToRoute[index]);
         }
       },
-      bottomPlayer: isPluginTab ? null : _buildBottomPlayer(context),
+      bottomPlayer: (isPluginTab || isSettings) ? null : _buildBottomPlayer(context),
       playlistDrawer: showPlaylistDrawer ? const PlaylistDrawer() : null,
     );
   }

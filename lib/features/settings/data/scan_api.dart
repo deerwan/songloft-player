@@ -170,13 +170,13 @@ class ScanApi {
 
 /// 指纹状态
 class FingerprintStatus {
-  final bool fpcalcAvailable;
+  final bool chromaprintAvailable;
   final int total;
   final int computed;
   final int missing;
 
   FingerprintStatus({
-    required this.fpcalcAvailable,
+    required this.chromaprintAvailable,
     required this.total,
     required this.computed,
     required this.missing,
@@ -184,7 +184,7 @@ class FingerprintStatus {
 
   factory FingerprintStatus.fromJson(Map<String, dynamic> json) {
     return FingerprintStatus(
-      fpcalcAvailable: json['fpcalc_available'] as bool? ?? false,
+      chromaprintAvailable: json['chromaprint_available'] as bool? ?? false,
       total: json['total'] as int? ?? 0,
       computed: json['computed'] as int? ?? 0,
       missing: json['missing'] as int? ?? 0,
