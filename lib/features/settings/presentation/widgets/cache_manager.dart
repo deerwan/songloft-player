@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../core/storage/lyric_cache_service.dart';
+import '../../../../core/utils/web_cache_clearer.dart' as web_cache;
 import '../../../../shared/utils/responsive_snackbar.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/cache_api.dart';
@@ -36,6 +37,7 @@ class CacheManager extends ConsumerStatefulWidget {
 class _CacheManagerState extends ConsumerState<CacheManager> {
   bool _isCleaningServer = false;
   bool _isCleaningLocal = false;
+  bool _isCleaningBrowser = false;
   bool _serverExpanded = false;
   bool _localExpanded = false;
   int _localCacheSize = 0;
@@ -204,6 +206,26 @@ class _CacheManagerState extends ConsumerState<CacheManager> {
     }
   }
 
+  /// 清理浏览器缓存（Cache Storage + Service Worker）
+  Future<void> _cleanBrowserCache() async {
+    final confirmed = await _showConfirmDialog(
+      title: '清理浏览器缓存',
+      content: '将清除所有前端静态资源缓存并刷新页面。不会影响登录状态和服务端数据。',
+    );
+    if (confirmed != true) return;
+
+    setState(() => _isCleaningBrowser = true);
+    try {
+      await web_cache.clearBrowserCache();
+      web_cache.reloadPage();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isCleaningBrowser = false);
+        ResponsiveSnackBar.showError(context, message: '清理失败: $e');
+      }
+    }
+  }
+
   /// 更新服务端缓存配置
   Future<void> _updateServerCacheConfig(int maxSize) async {
     try {
@@ -277,6 +299,14 @@ class _CacheManagerState extends ConsumerState<CacheManager> {
         children: [
           // 服务端音乐缓存
           _buildServerCacheSection(theme, colorScheme),
+
+          // 浏览器缓存（仅 Web 平台显示）
+          if (kIsWeb) ...[
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
+            _buildBrowserCacheSection(theme, colorScheme),
+          ],
 
           // 本地缓存（仅非 Web 平台显示）
           if (!kIsWeb) ...[
@@ -573,6 +603,49 @@ class _CacheManagerState extends ConsumerState<CacheManager> {
               ? CrossFadeState.showSecond
               : CrossFadeState.showFirst,
           duration: const Duration(milliseconds: 200),
+        ),
+      ],
+    );
+  }
+
+  /// 构建浏览器缓存区域（仅 Web 平台）
+  Widget _buildBrowserCacheSection(ThemeData theme, ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.language_outlined, size: 18, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              '浏览器缓存',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          '清除浏览器中缓存的前端资源文件，解决更新后页面异常的问题',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _isCleaningBrowser ? null : _cleanBrowserCache,
+            icon: _isCleaningBrowser
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh_outlined),
+            label: Text(_isCleaningBrowser ? '清理中...' : '清理浏览器缓存'),
+          ),
         ),
       ],
     );
