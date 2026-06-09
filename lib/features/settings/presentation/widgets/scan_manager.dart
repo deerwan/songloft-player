@@ -111,6 +111,14 @@ class _ScanManagerState extends ConsumerState<ScanManager> {
           const SizedBox(height: 12),
         ],
 
+        // 「扫描后自动创建歌单」总开关
+        _buildAutoCreatePlaylistsTile(),
+        const SizedBox(height: AppSpacing.md),
+
+        // 「扫描后自动创建歌单」总开关
+        _buildAutoCreatePlaylistsTile(),
+        const SizedBox(height: AppSpacing.md),
+
         // 「歌单包含子目录歌曲」开关
         _buildIncludeSubdirsTile(),
         const SizedBox(height: AppSpacing.md),
@@ -145,9 +153,7 @@ class _ScanManagerState extends ConsumerState<ScanManager> {
                   ),
                 ),
                 trailing: Icon(
-                  _showExcludeDirs
-                      ? Icons.expand_less
-                      : Icons.expand_more,
+                  _showExcludeDirs ? Icons.expand_less : Icons.expand_more,
                 ),
                 onTap: () {
                   setState(() => _showExcludeDirs = !_showExcludeDirs);
@@ -239,13 +245,14 @@ class _ScanManagerState extends ConsumerState<ScanManager> {
           width: double.infinity,
           child: FilledButton.icon(
             onPressed: _isLoading ? null : _startScan,
-            icon: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.search),
+            icon:
+                _isLoading
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.search),
             label: Text(_isLoading ? '正在启动...' : '扫描本地音乐'),
           ),
         ),
@@ -265,10 +272,7 @@ class _ScanManagerState extends ConsumerState<ScanManager> {
         ),
         const SizedBox(height: 12),
         if (isCreatingPlaylists)
-          Text(
-            '正在按目录自动创建歌单...',
-            style: Theme.of(context).textTheme.bodySmall,
-          )
+          Text('正在按目录自动创建歌单...', style: Theme.of(context).textTheme.bodySmall)
         else ...[
           if (progress.currentFile != null)
             Text(
@@ -293,11 +297,63 @@ class _ScanManagerState extends ConsumerState<ScanManager> {
     );
   }
 
+  /// 「扫描后自动创建歌单」总开关
+  Widget _buildAutoCreatePlaylistsTile() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final asyncValue = ref.watch(autoCreatePlaylistsProvider);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      child: SwitchListTile(
+        secondary: Icon(
+          Icons.playlist_add_outlined,
+          color: colorScheme.onSurfaceVariant,
+        ),
+        title: const Text('扫描后自动创建歌单'),
+        subtitle: Text(
+          asyncValue.when(
+            data: (_) => '按目录结构自动生成歌单',
+            loading: () => '加载中...',
+            error: (_, _) => '读取配置失败',
+          ),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        value: asyncValue.value ?? true,
+        onChanged:
+            asyncValue.isLoading
+                ? null
+                : (value) async {
+                  try {
+                    await ref
+                        .read(autoCreatePlaylistsProvider.notifier)
+                        .setValue(value);
+                  } catch (e) {
+                    if (mounted) {
+                      ResponsiveSnackBar.showError(
+                        context,
+                        message: '保存失败: $e',
+                      );
+                    }
+                  }
+                },
+      ),
+    );
+  }
+
   /// 「歌单包含子目录歌曲」开关
   Widget _buildIncludeSubdirsTile() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final asyncValue = ref.watch(autoCreateIncludeSubdirsProvider);
+    final autoCreateAsync = ref.watch(autoCreatePlaylistsProvider);
+    final autoCreateEnabled = autoCreateAsync.value ?? true;
 
     return Card(
       elevation: 0,
@@ -308,36 +364,53 @@ class _ScanManagerState extends ConsumerState<ScanManager> {
       child: SwitchListTile(
         secondary: Icon(
           Icons.account_tree_outlined,
-          color: colorScheme.onSurfaceVariant,
+          color:
+              autoCreateEnabled
+                  ? colorScheme.onSurfaceVariant
+                  : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
         ),
-        title: const Text('歌单包含子目录歌曲'),
-        subtitle: Text(
-          asyncValue.when(
-            data: (_) => '子目录的歌曲会同时归入祖先目录歌单',
-            loading: () => '加载中...',
-            error: (_, _) => '读取配置失败',
+        title: Text(
+          '歌单包含子目录歌曲',
+          style: TextStyle(
+            color:
+                autoCreateEnabled
+                    ? null
+                    : colorScheme.onSurface.withValues(alpha: 0.4),
           ),
+        ),
+        subtitle: Text(
+          autoCreateEnabled
+              ? asyncValue.when(
+                data: (_) => '子目录的歌曲会同时归入祖先目录歌单',
+                loading: () => '加载中...',
+                error: (_, _) => '读取配置失败',
+              )
+              : '已关闭自动创建歌单，此项不生效',
           style: theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
+            color:
+                autoCreateEnabled
+                    ? colorScheme.onSurfaceVariant
+                    : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
           ),
         ),
         value: asyncValue.value ?? false,
-        onChanged: asyncValue.isLoading
-            ? null
-            : (value) async {
-                try {
-                  await ref
-                      .read(autoCreateIncludeSubdirsProvider.notifier)
-                      .setValue(value);
-                } catch (e) {
-                  if (mounted) {
-                    ResponsiveSnackBar.showError(
-                      context,
-                      message: '保存失败: $e',
-                    );
+        onChanged:
+            (!autoCreateEnabled || asyncValue.isLoading)
+                ? null
+                : (value) async {
+                  try {
+                    await ref
+                        .read(autoCreateIncludeSubdirsProvider.notifier)
+                        .setValue(value);
+                  } catch (e) {
+                    if (mounted) {
+                      ResponsiveSnackBar.showError(
+                        context,
+                        message: '保存失败: $e',
+                      );
+                    }
                   }
-                }
-              },
+                },
       ),
     );
   }
@@ -363,36 +436,35 @@ class _ScanManagerState extends ConsumerState<ScanManager> {
         ),
         title: const Text('使用文件名作为标题'),
         subtitle: Text(
-          isFilename
-              ? '歌曲标题使用文件名（不含扩展名），适合文件名已编号的情况'
-              : '歌曲标题优先使用音频标签信息',
+          isFilename ? '歌曲标题使用文件名（不含扩展名），适合文件名已编号的情况' : '歌曲标题优先使用音频标签信息',
           style: theme.textTheme.bodySmall?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
         ),
         value: isFilename,
-        onChanged: asyncValue.isLoading
-            ? null
-            : (value) async {
-                try {
-                  await ref
-                      .read(scanTitleSourceProvider.notifier)
-                      .setValue(value ? 'filename' : 'tag');
-                  if (mounted) {
-                    ResponsiveSnackBar.show(
-                      context,
-                      message: '已保存，需以「重新导入」模式扫描后生效',
-                    );
+        onChanged:
+            asyncValue.isLoading
+                ? null
+                : (value) async {
+                  try {
+                    await ref
+                        .read(scanTitleSourceProvider.notifier)
+                        .setValue(value ? 'filename' : 'tag');
+                    if (mounted) {
+                      ResponsiveSnackBar.show(
+                        context,
+                        message: '已保存，需以「重新导入」模式扫描后生效',
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ResponsiveSnackBar.showError(
+                        context,
+                        message: '保存失败: $e',
+                      );
+                    }
                   }
-                } catch (e) {
-                  if (mounted) {
-                    ResponsiveSnackBar.showError(
-                      context,
-                      message: '保存失败: $e',
-                    );
-                  }
-                }
-              },
+                },
       ),
     );
   }
@@ -415,7 +487,8 @@ class _ScanManagerState extends ConsumerState<ScanManager> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final asyncValue = ref.watch(autoScanProvider);
-    final setting = asyncValue.value ??
+    final setting =
+        asyncValue.value ??
         AutoScanSetting(enabled: false, intervalSeconds: 3600);
 
     return Card(
@@ -441,22 +514,23 @@ class _ScanManagerState extends ConsumerState<ScanManager> {
               ),
             ),
             value: setting.enabled,
-            onChanged: asyncValue.isLoading
-                ? null
-                : (value) async {
-                    try {
-                      await ref
-                          .read(autoScanProvider.notifier)
-                          .setValue(setting.copyWith(enabled: value));
-                    } catch (e) {
-                      if (mounted) {
-                        ResponsiveSnackBar.showError(
-                          context,
-                          message: '保存失败: $e',
-                        );
+            onChanged:
+                asyncValue.isLoading
+                    ? null
+                    : (value) async {
+                      try {
+                        await ref
+                            .read(autoScanProvider.notifier)
+                            .setValue(setting.copyWith(enabled: value));
+                      } catch (e) {
+                        if (mounted) {
+                          ResponsiveSnackBar.showError(
+                            context,
+                            message: '保存失败: $e',
+                          );
+                        }
                       }
-                    }
-                  },
+                    },
           ),
           if (setting.enabled)
             Padding(
@@ -477,9 +551,10 @@ class _ScanManagerState extends ConsumerState<ScanManager> {
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: DropdownButtonFormField<int>(
-                      initialValue: _intervalOptions.containsKey(setting.intervalSeconds)
-                          ? setting.intervalSeconds
-                          : 3600,
+                      initialValue:
+                          _intervalOptions.containsKey(setting.intervalSeconds)
+                              ? setting.intervalSeconds
+                              : 3600,
                       decoration: const InputDecoration(
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(
@@ -487,32 +562,37 @@ class _ScanManagerState extends ConsumerState<ScanManager> {
                           vertical: 8,
                         ),
                       ),
-                      items: _intervalOptions.entries
-                          .map(
-                            (e) => DropdownMenuItem(
-                              value: e.key,
-                              child: Text(e.value),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: asyncValue.isLoading
-                          ? null
-                          : (value) async {
-                              if (value == null) return;
-                              try {
-                                await ref
-                                    .read(autoScanProvider.notifier)
-                                    .setValue(setting.copyWith(
-                                        intervalSeconds: value));
-                              } catch (e) {
-                                if (mounted) {
-                                  ResponsiveSnackBar.showError(
-                                    context,
-                                    message: '保存失败: $e',
-                                  );
+                      items:
+                          _intervalOptions.entries
+                              .map(
+                                (e) => DropdownMenuItem(
+                                  value: e.key,
+                                  child: Text(e.value),
+                                ),
+                              )
+                              .toList(),
+                      onChanged:
+                          asyncValue.isLoading
+                              ? null
+                              : (value) async {
+                                if (value == null) return;
+                                try {
+                                  await ref
+                                      .read(autoScanProvider.notifier)
+                                      .setValue(
+                                        setting.copyWith(
+                                          intervalSeconds: value,
+                                        ),
+                                      );
+                                } catch (e) {
+                                  if (mounted) {
+                                    ResponsiveSnackBar.showError(
+                                      context,
+                                      message: '保存失败: $e',
+                                    );
+                                  }
                                 }
-                              }
-                            },
+                              },
                     ),
                   ),
                 ],

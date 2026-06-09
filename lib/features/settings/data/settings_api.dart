@@ -20,29 +20,28 @@ class MusicPathSetting {
       path: json['path'] as String? ?? 'music',
       excludeDirs:
           (json['exclude_dirs'] as List?)?.map((e) => e as String).toList() ??
-              <String>[],
+          <String>[],
       excludePaths:
           (json['exclude_paths'] as List?)?.map((e) => e as String).toList() ??
-              <String>[],
+          <String>[],
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'path': path,
-        'exclude_dirs': excludeDirs,
-        'exclude_paths': excludePaths,
-      };
+    'path': path,
+    'exclude_dirs': excludeDirs,
+    'exclude_paths': excludePaths,
+  };
 
   MusicPathSetting copyWith({
     String? path,
     List<String>? excludeDirs,
     List<String>? excludePaths,
-  }) =>
-      MusicPathSetting(
-        path: path ?? this.path,
-        excludeDirs: excludeDirs ?? this.excludeDirs,
-        excludePaths: excludePaths ?? this.excludePaths,
-      );
+  }) => MusicPathSetting(
+    path: path ?? this.path,
+    excludeDirs: excludeDirs ?? this.excludeDirs,
+    excludePaths: excludePaths ?? this.excludePaths,
+  );
 }
 
 /// 自动扫描配置（GET/PUT /settings/auto-scan）
@@ -60,9 +59,9 @@ class AutoScanSetting {
   }
 
   Map<String, dynamic> toJson() => {
-        'enabled': enabled,
-        'interval_seconds': intervalSeconds,
-      };
+    'enabled': enabled,
+    'interval_seconds': intervalSeconds,
+  };
 
   AutoScanSetting copyWith({bool? enabled, int? intervalSeconds}) =>
       AutoScanSetting(
@@ -92,10 +91,10 @@ class PluginRegistryConfig {
   }
 
   Map<String, dynamic> toJson() => {
-        'url': url,
-        'name': name,
-        'enabled': enabled,
-      };
+    'url': url,
+    'name': name,
+    'enabled': enabled,
+  };
 
   PluginRegistryConfig copyWith({String? url, String? name, bool? enabled}) =>
       PluginRegistryConfig(
@@ -126,10 +125,10 @@ class PluginTabEntry {
   }
 
   Map<String, dynamic> toJson() => {
-        'plugin_id': pluginId,
-        'entry_path': entryPath,
-        'name': name,
-      };
+    'plugin_id': pluginId,
+    'entry_path': entryPath,
+    'name': name,
+  };
 
   PluginTabEntry copyWith({int? pluginId, String? entryPath, String? name}) =>
       PluginTabEntry(
@@ -151,17 +150,15 @@ class TabConfig {
     required this.pluginTabs,
   });
 
-  factory TabConfig.defaultConfig() => TabConfig(
-        showLibrary: true,
-        showPlaylists: true,
-        pluginTabs: [],
-      );
+  factory TabConfig.defaultConfig() =>
+      TabConfig(showLibrary: true, showPlaylists: true, pluginTabs: []);
 
   factory TabConfig.fromJson(Map<String, dynamic> json) {
     return TabConfig(
       showLibrary: json['show_library'] as bool? ?? true,
       showPlaylists: json['show_playlists'] as bool? ?? true,
-      pluginTabs: (json['plugin_tabs'] as List?)
+      pluginTabs:
+          (json['plugin_tabs'] as List?)
               ?.map((e) => PluginTabEntry.fromJson(e as Map<String, dynamic>))
               .toList() ??
           <PluginTabEntry>[],
@@ -169,21 +166,20 @@ class TabConfig {
   }
 
   Map<String, dynamic> toJson() => {
-        'show_library': showLibrary,
-        'show_playlists': showPlaylists,
-        'plugin_tabs': pluginTabs.map((e) => e.toJson()).toList(),
-      };
+    'show_library': showLibrary,
+    'show_playlists': showPlaylists,
+    'plugin_tabs': pluginTabs.map((e) => e.toJson()).toList(),
+  };
 
   TabConfig copyWith({
     bool? showLibrary,
     bool? showPlaylists,
     List<PluginTabEntry>? pluginTabs,
-  }) =>
-      TabConfig(
-        showLibrary: showLibrary ?? this.showLibrary,
-        showPlaylists: showPlaylists ?? this.showPlaylists,
-        pluginTabs: pluginTabs ?? this.pluginTabs,
-      );
+  }) => TabConfig(
+    showLibrary: showLibrary ?? this.showLibrary,
+    showPlaylists: showPlaylists ?? this.showPlaylists,
+    pluginTabs: pluginTabs ?? this.pluginTabs,
+  );
 
   int get optionalCount =>
       (showLibrary ? 1 : 0) + (showPlaylists ? 1 : 0) + pluginTabs.length;
@@ -218,6 +214,56 @@ class SettingsApi {
     try {
       await dio.put(
         '${AppConfig.apiPrefix}/settings/hls-proxy',
+        data: {'enabled': enabled},
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  // ---------- 扫描后自动创建歌单（按目录结构生成歌单） ----------
+
+  Future<bool> getScanAutoCreatePlaylists() async {
+    try {
+      final response = await dio.get(
+        '${AppConfig.apiPrefix}/settings/scan-auto-create-playlists',
+      );
+      final data = response.data as Map<String, dynamic>;
+      return data['enabled'] as bool? ?? true;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  Future<void> setScanAutoCreatePlaylists(bool enabled) async {
+    try {
+      await dio.put(
+        '${AppConfig.apiPrefix}/settings/scan-auto-create-playlists',
+        data: {'enabled': enabled},
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  // ---------- 扫描后自动创建歌单（按目录结构生成歌单） ----------
+
+  Future<bool> getScanAutoCreatePlaylists() async {
+    try {
+      final response = await dio.get(
+        '${AppConfig.apiPrefix}/settings/scan-auto-create-playlists',
+      );
+      final data = response.data as Map<String, dynamic>;
+      return data['enabled'] as bool? ?? true;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  Future<void> setScanAutoCreatePlaylists(bool enabled) async {
+    try {
+      await dio.put(
+        '${AppConfig.apiPrefix}/settings/scan-auto-create-playlists',
         data: {'enabled': enabled},
       );
     } on DioException catch (e) {
@@ -279,8 +325,9 @@ class SettingsApi {
 
   Future<MusicPathSetting> getMusicPath() async {
     try {
-      final response =
-          await dio.get('${AppConfig.apiPrefix}/settings/music-path');
+      final response = await dio.get(
+        '${AppConfig.apiPrefix}/settings/music-path',
+      );
       return MusicPathSetting.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
@@ -334,8 +381,7 @@ class SettingsApi {
       final data = response.data as Map<String, dynamic>;
       final list = data['registries'] as List<dynamic>? ?? [];
       return list
-          .map((e) =>
-              PluginRegistryConfig.fromJson(e as Map<String, dynamic>))
+          .map((e) => PluginRegistryConfig.fromJson(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
@@ -353,8 +399,7 @@ class SettingsApi {
       final data = response.data as Map<String, dynamic>;
       final list = data['registries'] as List<dynamic>? ?? [];
       return list
-          .map((e) =>
-              PluginRegistryConfig.fromJson(e as Map<String, dynamic>))
+          .map((e) => PluginRegistryConfig.fromJson(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
