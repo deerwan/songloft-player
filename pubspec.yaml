@@ -1,7 +1,7 @@
 name: songloft_flutter
 description: Songloft - 跨平台音乐播放器
 publish_to: 'none'
-version: 2.7.0+1
+version: 2.8.0+1
 license: Apache-2.0
 
 environment:
@@ -51,6 +51,8 @@ dependencies:
   tray_manager: ^0.2.4
   windows_single_instance: any
   flutter_svg: ^2.3.0
+  # HMAC-SHA256 签名（Tracely 监控 SDK）
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:
