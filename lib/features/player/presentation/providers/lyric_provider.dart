@@ -125,6 +125,10 @@ class LyricNotifier extends Notifier<LyricState> {
         currentIndex: index,
         rawLyricText: cached,
       );
+      LiveActivityService().updateLyric(
+        state.currentLyricText,
+        state.nextLyricText,
+      );
       return;
     }
 
@@ -147,6 +151,10 @@ class LyricNotifier extends Notifier<LyricState> {
         lyrics: lyrics,
         currentIndex: index,
         rawLyricText: lyricText,
+      );
+      LiveActivityService().updateLyric(
+        state.currentLyricText,
+        state.nextLyricText,
       );
 
       if (lyricText.isNotEmpty) {
