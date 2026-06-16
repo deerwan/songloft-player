@@ -53,8 +53,41 @@ class AdaptiveScaffold extends StatelessWidget {
     }
   }
 
+  static const int _mobileMaxVisible = 5;
+  static const int _mobileRealSlots = 4;
+
   /// Mobile: 底部导航栏布局
   Widget _buildMobileLayout(BuildContext context) {
+    final hasOverflow = destinations.length > _mobileMaxVisible;
+
+    if (!hasOverflow) {
+      return Scaffold(
+        body: body,
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (bottomPlayer != null) bottomPlayer!,
+            NavigationBar(
+              selectedIndex: currentIndex,
+              onDestinationSelected: onDestinationSelected,
+              destinations:
+                  destinations.map((dest) {
+                    return NavigationDestination(
+                      icon: dest.icon,
+                      selectedIcon: dest.selectedIcon,
+                      label: dest.label,
+                    );
+                  }).toList(),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final barSelectedIndex = currentIndex < _mobileRealSlots
+        ? currentIndex
+        : _mobileRealSlots;
+
     return Scaffold(
       body: body,
       bottomNavigationBar: Column(
@@ -62,19 +95,102 @@ class AdaptiveScaffold extends StatelessWidget {
         children: [
           if (bottomPlayer != null) bottomPlayer!,
           NavigationBar(
-            selectedIndex: currentIndex,
-            onDestinationSelected: onDestinationSelected,
-            destinations:
-                destinations.map((dest) {
-                  return NavigationDestination(
-                    icon: dest.icon,
-                    selectedIcon: dest.selectedIcon,
-                    label: dest.label,
-                  );
-                }).toList(),
+            selectedIndex: barSelectedIndex,
+            onDestinationSelected: (index) {
+              if (index < _mobileRealSlots) {
+                onDestinationSelected(index);
+              } else {
+                _showOverflowSheet(context);
+              }
+            },
+            destinations: [
+              for (var i = 0; i < _mobileRealSlots; i++)
+                NavigationDestination(
+                  icon: destinations[i].icon,
+                  selectedIcon: destinations[i].selectedIcon,
+                  label: destinations[i].label,
+                ),
+              const NavigationDestination(
+                icon: Icon(Icons.more_horiz),
+                selectedIcon: Icon(Icons.more_horiz),
+                label: '更多',
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  void _showOverflowSheet(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final overflowDests = destinations.sublist(_mobileRealSlots);
+
+    showModalBottomSheet(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Container(
+                  width: 32,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              for (var i = 0; i < overflowDests.length; i++)
+                _buildOverflowTile(
+                  sheetContext,
+                  overflowDests[i],
+                  _mobileRealSlots + i,
+                  colorScheme,
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOverflowTile(
+    BuildContext sheetContext,
+    NavDestination dest,
+    int originalIndex,
+    ColorScheme colorScheme,
+  ) {
+    final isSelected = currentIndex == originalIndex;
+    return ListTile(
+      leading: IconTheme(
+        data: IconThemeData(
+          color: isSelected
+              ? colorScheme.primary
+              : colorScheme.onSurfaceVariant,
+        ),
+        child: isSelected ? dest.selectedIcon : dest.icon,
+      ),
+      title: Text(
+        dest.label,
+        style: TextStyle(
+          color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+      selected: isSelected,
+      selectedTileColor: colorScheme.primaryContainer.withValues(alpha: 0.3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      onTap: () {
+        Navigator.pop(sheetContext);
+        onDestinationSelected(originalIndex);
+      },
     );
   }
 

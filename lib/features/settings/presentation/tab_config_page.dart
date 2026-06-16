@@ -13,7 +13,7 @@ import 'providers/settings_provider.dart';
 class TabConfigPage extends ConsumerWidget {
   const TabConfigPage({super.key});
 
-  static const int _maxTabs = 5;
+  static const int _maxTabs = 12;
   static const int _fixedTabs = 2;
 
   @override
@@ -84,10 +84,27 @@ class TabConfigPage extends ConsumerWidget {
                   ]
                 : _buildPluginTiles(context, ref, config, activePlugins, atLimit),
           ),
+          if (config.pluginTabs.length > 1) ...[
+            const SizedBox(height: 16),
+            SectionCard(
+              title: '插件排序',
+              icon: Icons.reorder,
+              children: [
+                _PluginTabReorderList(
+                  config: config,
+                  plugins: plugins,
+                  onReorder: (newConfig) =>
+                      _updateConfig(context, ref, newConfig, false),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 24),
           Center(
             child: Text(
-              '已使用 $usedCount/$_maxTabs 个标签位（首页和设置固定显示）',
+              '已启用 $usedCount 个标签（首页和设置固定显示）'
+              '${usedCount > 5 ? '\n移动端超出 5 个时将折叠到「更多」菜单' : ''}',
+              textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -168,5 +185,70 @@ class TabConfigPage extends ConsumerWidget {
       }
     }
   }
+}
 
+class _PluginTabReorderList extends StatelessWidget {
+  final TabConfig config;
+  final List<JSPlugin> plugins;
+  final ValueChanged<TabConfig> onReorder;
+
+  const _PluginTabReorderList({
+    required this.config,
+    required this.plugins,
+    required this.onReorder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pluginTabs = config.pluginTabs;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ReorderableListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      buildDefaultDragHandles: false,
+      itemCount: pluginTabs.length,
+      onReorder: (oldIndex, newIndex) {
+        if (newIndex > oldIndex) newIndex--;
+        final newList = List<PluginTabEntry>.from(pluginTabs);
+        final item = newList.removeAt(oldIndex);
+        newList.insert(newIndex, item);
+        onReorder(config.copyWith(pluginTabs: newList));
+      },
+      proxyDecorator: (child, index, animation) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) => Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(12),
+            child: child,
+          ),
+          child: child,
+        );
+      },
+      itemBuilder: (context, index) {
+        final pt = pluginTabs[index];
+        final plugin = plugins
+            .where((p) => p.entryPath == pt.entryPath)
+            .firstOrNull;
+
+        return ListTile(
+          key: ValueKey(pt.entryPath),
+          leading: PluginNavIcon(
+            iconUrl: plugin?.iconUrl,
+            size: 24,
+            fallbackIcon: const Icon(Icons.extension_outlined),
+          ),
+          title: Text(pt.name),
+          trailing: ReorderableDragStartListener(
+            index: index,
+            child: Icon(
+              Icons.drag_handle,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        );
+      },
+    );
+  }
 }

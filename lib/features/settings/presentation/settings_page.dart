@@ -157,7 +157,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   // ── 外观设置 ──
 
-  static const int _maxTabs = 5;
+  static const int _maxTabs = 12;
   static const int _fixedTabs = 2;
 
   List<Widget> _buildAppearanceItems() {
@@ -229,7 +229,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             padding: const EdgeInsets.all(AppSpacing.sm),
             child: Center(
               child: Text(
-                '已使用 $usedCount/$_maxTabs 个标签位（首页和设置固定显示）',
+                '已启用 $usedCount 个标签（首页和设置固定显示）'
+                '${usedCount > 5 ? '\n移动端超出 5 个时将折叠到「更多」菜单' : ''}',
+                textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
