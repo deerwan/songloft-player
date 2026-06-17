@@ -812,7 +812,14 @@ class PlayerNotifier extends Notifier<PlayerState> {
       }
 
       // playPlaylist 内部会递增 _loadGeneration，取消之前的后台加载
-      await playPlaylist(firstPageSongs, sourcePlaylistId: playlistId);
+      final startIndex = state.playMode == PlayMode.random
+          ? _random.nextInt(firstPageSongs.length)
+          : 0;
+      await playPlaylist(
+        firstPageSongs,
+        startIndex: startIndex,
+        sourcePlaylistId: playlistId,
+      );
 
       if (total > firstPageSongs.length) {
         // 记录当前代次，传给后台加载任务用于检测是否过期
@@ -1106,7 +1113,12 @@ class PlayerNotifier extends Notifier<PlayerState> {
       }
 
       // playPlaylist 内部会递增 _loadGeneration，取消之前的后台加载
-      final safeStartIndex = startIndex.clamp(0, firstPageSongs.length - 1);
+      final effectiveStartIndex = startIndex == 0 &&
+              state.playMode == PlayMode.random
+          ? _random.nextInt(firstPageSongs.length)
+          : startIndex;
+      final safeStartIndex =
+          effectiveStartIndex.clamp(0, firstPageSongs.length - 1);
       await playPlaylist(firstPageSongs, startIndex: safeStartIndex);
 
       if (total > firstPageSongs.length) {
