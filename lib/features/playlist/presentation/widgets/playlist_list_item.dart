@@ -73,17 +73,19 @@ class PlaylistListItem extends StatelessWidget {
                     fit: StackFit.expand,
                     children: [
                       playlist.coverImageUrl != null
-                          ? CachedNetworkImage(
-                            imageUrl: UrlHelper.buildCoverUrl(
-                              playlist.coverImageUrl!,
+                          ? ExcludeSemantics(
+                            child: CachedNetworkImage(
+                              imageUrl: UrlHelper.buildCoverUrl(
+                                playlist.coverImageUrl!,
+                              ),
+                              fit: BoxFit.cover,
+                              placeholder:
+                                  (context, url) =>
+                                      _buildPlaceholder(colorScheme),
+                              errorWidget:
+                                  (context, url, error) =>
+                                      _buildPlaceholder(colorScheme),
                             ),
-                            fit: BoxFit.cover,
-                            placeholder:
-                                (context, url) =>
-                                    _buildPlaceholder(colorScheme),
-                            errorWidget:
-                                (context, url, error) =>
-                                    _buildPlaceholder(colorScheme),
                           )
                           : _buildPlaceholder(colorScheme),
                       if (isCurrentPlaylist && isPlaying)

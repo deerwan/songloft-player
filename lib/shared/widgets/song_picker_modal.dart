@@ -430,6 +430,7 @@ class _SongPickerModalState extends ConsumerState<SongPickerModal> {
                           _searchController.text.isNotEmpty
                               ? IconButton(
                                 icon: const Icon(Icons.clear),
+                                tooltip: '清除搜索',
                                 onPressed: _clearSearch,
                               )
                               : null,
@@ -480,7 +481,10 @@ class _SongPickerModalState extends ConsumerState<SongPickerModal> {
           if (_songs.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: InkWell(
+              child: Semantics(
+                button: true,
+                label: '全选',
+                child: InkWell(
                 onTap: _isSelectingAll ? null : _toggleSelectAll,
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
@@ -512,6 +516,7 @@ class _SongPickerModalState extends ConsumerState<SongPickerModal> {
                     ],
                   ),
                 ),
+              ),
               ),
             ),
 

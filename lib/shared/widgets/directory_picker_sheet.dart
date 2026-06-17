@@ -181,30 +181,34 @@ class _AllRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Icon(
-              Icons.all_inbox,
-              size: 20,
-              color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                '全部歌曲',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                  color: selected ? colorScheme.primary : null,
+    return Semantics(
+      button: true,
+      label: '选择全部文件',
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.all_inbox,
+                size: 20,
+                color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '全部歌曲',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                    color: selected ? colorScheme.primary : null,
+                  ),
                 ),
               ),
-            ),
-            if (selected)
-              Icon(Icons.check, size: 18, color: colorScheme.primary),
-          ],
+              if (selected)
+                Icon(Icons.check, size: 18, color: colorScheme.primary),
+            ],
+          ),
         ),
       ),
     );
@@ -294,6 +298,7 @@ class _DirectoryNodeState extends ConsumerState<_DirectoryNode> {
                                 : Icons.keyboard_arrow_right,
                             size: 20,
                           ),
+                          tooltip: _isExpanded ? '收起' : '展开',
                           onPressed: _toggleExpand,
                         )
                       : const SizedBox.shrink(),

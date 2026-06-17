@@ -50,6 +50,7 @@ class SongCoverPickerModal extends ConsumerWidget {
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close),
+                  tooltip: '关闭',
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -255,58 +256,64 @@ class _CoverGridItem extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final coverUrl = song.coverUrl;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 封面图片
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child:
-                  coverUrl != null
-                      ? CachedNetworkImage(
-                        imageUrl: UrlHelper.buildCoverUrl(coverUrl),
-                        fit: BoxFit.cover,
-                        placeholder:
-                            (context, url) => Container(
-                              color: colorScheme.surfaceContainerHighest,
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+    return Semantics(
+      button: true,
+      label: '选择此封面',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 封面图片
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child:
+                    coverUrl != null
+                        ? ExcludeSemantics(
+                          child: CachedNetworkImage(
+                            imageUrl: UrlHelper.buildCoverUrl(coverUrl),
+                            fit: BoxFit.cover,
+                            placeholder:
+                                (context, url) => Container(
+                                  color: colorScheme.surfaceContainerHighest,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                        errorWidget:
-                            (context, url, error) => Container(
-                              color: colorScheme.surfaceContainerHighest,
-                              child: Icon(
-                                Icons.music_note,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                      )
-                      : Container(
-                        color: colorScheme.surfaceContainerHighest,
-                        child: Icon(
-                          Icons.music_note,
-                          color: colorScheme.onSurfaceVariant,
+                            errorWidget:
+                                (context, url, error) => Container(
+                                  color: colorScheme.surfaceContainerHighest,
+                                  child: Icon(
+                                    Icons.music_note,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                          ),
+                        )
+                        : Container(
+                          color: colorScheme.surfaceContainerHighest,
+                          child: Icon(
+                            Icons.music_note,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          // 歌曲标题
-          Text(
-            song.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 4),
+            // 歌曲标题
+            Text(
+              song.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

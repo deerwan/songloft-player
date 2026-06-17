@@ -280,15 +280,17 @@ class _DrawerSongItem extends StatelessWidget {
                   child: Stack(
                     children: [
                       if (coverUrl != null)
-                        CachedNetworkImage(
-                          imageUrl: UrlHelper.buildCoverUrl(coverUrl),
-                          fit: BoxFit.cover,
-                          width: 36,
-                          height: 36,
-                          placeholder:
-                              (_, _) => _buildCoverPlaceholder(colorScheme),
-                          errorWidget:
-                              (_, _, _) => _buildCoverPlaceholder(colorScheme),
+                        ExcludeSemantics(
+                          child: CachedNetworkImage(
+                            imageUrl: UrlHelper.buildCoverUrl(coverUrl),
+                            fit: BoxFit.cover,
+                            width: 36,
+                            height: 36,
+                            placeholder:
+                                (_, _) => _buildCoverPlaceholder(colorScheme),
+                            errorWidget:
+                                (_, _, _) => _buildCoverPlaceholder(colorScheme),
+                          ),
                         )
                       else
                         _buildCoverPlaceholder(colorScheme),
@@ -356,6 +358,7 @@ class _DrawerSongItem extends StatelessWidget {
                   onPressed: onRemove,
                   icon: const Icon(Icons.close_rounded),
                   iconSize: 16,
+                  tooltip: '从播放列表移除',
                   visualDensity: VisualDensity.compact,
                   style: IconButton.styleFrom(
                     foregroundColor: colorScheme.onSurfaceVariant,

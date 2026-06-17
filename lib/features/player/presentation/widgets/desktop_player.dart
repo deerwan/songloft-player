@@ -103,64 +103,70 @@ class DesktopPlayer extends ConsumerWidget {
       children: [
         // 可点击区域（封面+标题）
         Expanded(
-          child: GestureDetector(
-            onTap: () => DesktopFullPlayer.show(context),
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              children: [
-                // 封面
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: theme.colorScheme.surfaceContainerHighest,
+          child: Semantics(
+            button: true,
+            label: '打开全屏播放器',
+            child: GestureDetector(
+              onTap: () => DesktopFullPlayer.show(context),
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: [
+                  // 封面
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: theme.colorScheme.surfaceContainerHighest,
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child:
+                        coverUrl != null
+                            ? ExcludeSemantics(
+                              child: Image.network(
+                                UrlHelper.buildCoverUrl(coverUrl),
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (_, _, _) => Icon(
+                                      Icons.music_note_rounded,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            )
+                            : Icon(
+                              Icons.music_note_rounded,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child:
-                      coverUrl != null
-                          ? Image.network(
-                            UrlHelper.buildCoverUrl(coverUrl),
-                            fit: BoxFit.cover,
-                            errorBuilder:
-                                (_, _, _) => Icon(
-                                  Icons.music_note_rounded,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                          )
-                          : Icon(
-                            Icons.music_note_rounded,
+                  const SizedBox(width: 12),
+                  // 标题和艺术家
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          song.title,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          song.artist ?? '未知艺术家',
+                          style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
-                ),
-                const SizedBox(width: 12),
-                // 标题和艺术家
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        song.title,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        song.artist ?? '未知艺术家',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

@@ -183,6 +183,7 @@ class _LyricAdjustPageState extends ConsumerState<LyricAdjustPage> {
               ),
               label: '$sign$_globalOffsetMs ms',
               onChanged: (v) => setState(() => _globalOffsetMs = v.round()),
+              semanticFormatterCallback: (value) => '歌词偏移 ${value.round()} 毫秒',
             ),
             Wrap(
               spacing: 8,

@@ -130,6 +130,7 @@ class _VolumeControlState extends State<VolumeControl> {
                 min: 0,
                 max: 100,
                 onChanged: widget.onVolumeChanged,
+                semanticFormatterCallback: (value) => '音量 ${value.round()}%',
               ),
             ),
           ),
@@ -402,10 +403,13 @@ class _VolumeOverlayPanelState extends State<_VolumeOverlayPanel> {
       children: [
         // 透明背景层，点击关闭
         Positioned.fill(
-          child: GestureDetector(
-            onTap: widget.onDismiss,
-            behavior: HitTestBehavior.opaque,
-            child: Container(color: Colors.transparent),
+          child: Semantics(
+            label: '关闭音量面板',
+            child: GestureDetector(
+              onTap: widget.onDismiss,
+              behavior: HitTestBehavior.opaque,
+              child: Container(color: Colors.transparent),
+            ),
           ),
         ),
         // 垂直音量控制面板
@@ -420,7 +424,9 @@ class _VolumeOverlayPanelState extends State<_VolumeOverlayPanel> {
               width: panelWidth,
               height: panelHeight,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              child: Column(
+              child: FocusScope(
+                autofocus: true,
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // 顶部：音量百分比
@@ -461,6 +467,7 @@ class _VolumeOverlayPanelState extends State<_VolumeOverlayPanel> {
                             setState(() => _currentVolume = value);
                             widget.onVolumeChanged(value);
                           },
+                          semanticFormatterCallback: (value) => '音量 ${value.round()}%',
                         ),
                       ),
                     ),
@@ -477,6 +484,7 @@ class _VolumeOverlayPanelState extends State<_VolumeOverlayPanel> {
                     tooltip: _currentVolume > 0 ? '静音' : '恢复音量',
                   ),
                 ],
+              ),
               ),
             ),
           ),

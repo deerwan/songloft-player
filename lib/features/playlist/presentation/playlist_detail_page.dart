@@ -542,13 +542,15 @@ class _PlaylistDetailPageState extends ConsumerState<PlaylistDetailPage> {
           ),
           clipBehavior: Clip.antiAlias,
           child: playlist.coverImageUrl != null
-              ? CachedNetworkImage(
-                  imageUrl: UrlHelper.buildCoverUrl(playlist.coverImageUrl!),
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) =>
-                      Container(color: colorScheme.surfaceContainerHighest),
-                  errorWidget: (context, url, error) =>
-                      _buildCoverPlaceholder(colorScheme, playlist),
+              ? ExcludeSemantics(
+                child: CachedNetworkImage(
+                    imageUrl: UrlHelper.buildCoverUrl(playlist.coverImageUrl!),
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) =>
+                        Container(color: colorScheme.surfaceContainerHighest),
+                    errorWidget: (context, url, error) =>
+                        _buildCoverPlaceholder(colorScheme, playlist),
+                  ),
                 )
               : _buildCoverPlaceholder(colorScheme, playlist),
         ),
@@ -870,6 +872,7 @@ class _PlaylistDetailPageState extends ConsumerState<PlaylistDetailPage> {
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear),
+                  tooltip: '清除搜索',
                   onPressed: () {
                     _searchController.clear();
                     ref
@@ -1351,15 +1354,17 @@ class _SongListTile extends StatelessWidget {
               height: 48,
               child:
                   coverUrl != null
-                      ? CachedNetworkImage(
-                        imageUrl: UrlHelper.buildCoverUrl(coverUrl),
-                        fit: BoxFit.cover,
-                        placeholder:
-                            (context, url) =>
-                                _buildCoverPlaceholder(colorScheme),
-                        errorWidget:
-                            (context, url, error) =>
-                                _buildCoverPlaceholder(colorScheme),
+                      ? ExcludeSemantics(
+                        child: CachedNetworkImage(
+                          imageUrl: UrlHelper.buildCoverUrl(coverUrl),
+                          fit: BoxFit.cover,
+                          placeholder:
+                              (context, url) =>
+                                  _buildCoverPlaceholder(colorScheme),
+                          errorWidget:
+                              (context, url, error) =>
+                                  _buildCoverPlaceholder(colorScheme),
+                        ),
                       )
                       : _buildCoverPlaceholder(colorScheme),
             ),
@@ -1728,13 +1733,15 @@ class _PlaylistEditDialogState extends ConsumerState<_PlaylistEditDialog> {
     // 网络图片预览
     final previewUrl = _previewCoverUrl;
     if (previewUrl != null && previewUrl.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: UrlHelper.buildCoverUrl(previewUrl),
-        fit: BoxFit.cover,
-        placeholder:
-            (context, url) =>
-                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        errorWidget: (context, url, error) => _buildPlaceholder(colorScheme),
+      return ExcludeSemantics(
+        child: CachedNetworkImage(
+          imageUrl: UrlHelper.buildCoverUrl(previewUrl),
+          fit: BoxFit.cover,
+          placeholder:
+              (context, url) =>
+                  const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          errorWidget: (context, url, error) => _buildPlaceholder(colorScheme),
+        ),
       );
     }
 

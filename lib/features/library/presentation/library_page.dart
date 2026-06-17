@@ -113,6 +113,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                       Icons.close,
                       color: colorScheme.onErrorContainer,
                     ),
+                    tooltip: '关闭提示',
                     onPressed: () {
                       ref.read(songsListProvider.notifier).clearError();
                     },
@@ -132,6 +133,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
       return AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close),
+          tooltip: '退出多选',
           onPressed: () {
             ref.read(songsListProvider.notifier).toggleSelectMode();
           },
@@ -269,6 +271,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
               _searchController.text.isNotEmpty
                   ? IconButton(
                     icon: const Icon(Icons.clear),
+                    tooltip: '清除搜索',
                     onPressed: () {
                       _searchController.clear();
                       ref.read(songsListProvider.notifier).search('');

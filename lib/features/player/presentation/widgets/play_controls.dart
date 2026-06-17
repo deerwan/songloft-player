@@ -38,6 +38,7 @@ class PlayControls extends StatelessWidget {
         IconButton(
           onPressed: hasPrev ? onPrev : null,
           icon: Icon(Icons.skip_previous_rounded, size: iconSize),
+          tooltip: '上一首',
           style: IconButton.styleFrom(
             foregroundColor: theme.colorScheme.onSurface,
             disabledForegroundColor: theme.colorScheme.onSurface.withValues(
@@ -53,6 +54,7 @@ class PlayControls extends StatelessWidget {
         IconButton(
           onPressed: hasNext ? onNext : null,
           icon: Icon(Icons.skip_next_rounded, size: iconSize),
+          tooltip: '下一首',
           style: IconButton.styleFrom(
             foregroundColor: theme.colorScheme.onSurface,
             disabledForegroundColor: theme.colorScheme.onSurface.withValues(
@@ -68,17 +70,20 @@ class PlayControls extends StatelessWidget {
     final theme = Theme.of(context);
 
     if (isBuffering) {
-      return ClipOval(
-        child: Container(
-          width: size,
-          height: size,
-          color: theme.colorScheme.primary,
-          child: Padding(
-            padding: EdgeInsets.all(size * 0.25),
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                theme.colorScheme.onPrimary,
+      return Semantics(
+        label: '正在缓冲',
+        child: ClipOval(
+          child: Container(
+            width: size,
+            height: size,
+            color: theme.colorScheme.primary,
+            child: Padding(
+              padding: EdgeInsets.all(size * 0.25),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  theme.colorScheme.onPrimary,
+                ),
               ),
             ),
           ),
@@ -86,18 +91,22 @@ class PlayControls extends StatelessWidget {
       );
     }
 
-    return ClipOval(
-      child: Material(
-        color: theme.colorScheme.primary,
-        child: InkWell(
-          onTap: isPlaying ? onPause : onPlay,
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: Icon(
-              isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              size: iconSize,
-              color: theme.colorScheme.onPrimary,
+    return Semantics(
+      button: true,
+      label: isPlaying ? '暂停' : '播放',
+      child: ClipOval(
+        child: Material(
+          color: theme.colorScheme.primary,
+          child: InkWell(
+            onTap: isPlaying ? onPause : onPlay,
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: Icon(
+                isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                size: iconSize,
+                color: theme.colorScheme.onPrimary,
+              ),
             ),
           ),
         ),
@@ -128,15 +137,18 @@ class CompactPlayButton extends StatelessWidget {
     final theme = Theme.of(context);
 
     if (isBuffering) {
-      return SizedBox(
-        width: size,
-        height: size,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              theme.colorScheme.primary,
+      return Semantics(
+        label: '正在缓冲',
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                theme.colorScheme.primary,
+              ),
             ),
           ),
         ),
@@ -149,6 +161,7 @@ class CompactPlayButton extends StatelessWidget {
         isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
         size: size * 0.6,
       ),
+      tooltip: isPlaying ? '暂停' : '播放',
       style: IconButton.styleFrom(foregroundColor: theme.colorScheme.primary),
     );
   }

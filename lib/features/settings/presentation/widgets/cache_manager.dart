@@ -495,6 +495,9 @@ class _CacheManagerState extends ConsumerState<CacheManager> {
                             max: (_cacheSizeOptions.length - 1).toDouble(),
                             divisions: _cacheSizeOptions.length - 1,
                             label: _cacheSizeOptions[currentIndex].label,
+                            semanticFormatterCallback: (value) {
+                              return _cacheSizeOptions[value.round()].label;
+                            },
                             onChanged: (value) {
                               setSliderState(() {
                                 currentIndex = value.round();
@@ -627,6 +630,9 @@ class _CacheManagerState extends ConsumerState<CacheManager> {
                   max: (_cacheSizeOptions.length - 1).toDouble(),
                   divisions: _cacheSizeOptions.length - 1,
                   label: _cacheSizeOptions[_localCacheMaxSizeIndex].label,
+                  semanticFormatterCallback: (value) {
+                    return _cacheSizeOptions[value.round()].label;
+                  },
                   onChanged: (value) {
                     setState(() {
                       _localCacheMaxSizeIndex = value.round();

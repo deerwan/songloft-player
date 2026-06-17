@@ -164,12 +164,14 @@ class SongListTile extends ConsumerWidget {
       borderRadius: BorderRadius.circular(4),
       child:
           coverUrl != null
-              ? Image.network(
-                UrlHelper.buildCoverUrl(coverUrl),
-                width: size,
-                height: size,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _buildDefaultCover(size),
+              ? ExcludeSemantics(
+                child: Image.network(
+                  UrlHelper.buildCoverUrl(coverUrl),
+                  width: size,
+                  height: size,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _buildDefaultCover(size),
+                ),
               )
               : _buildDefaultCover(size),
     );

@@ -306,7 +306,10 @@ class _JSPluginUploadDialogState extends State<_JSPluginUploadDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // 文件选择区域
-            InkWell(
+            Semantics(
+              button: true,
+              label: '选择插件文件上传',
+              child: InkWell(
               onTap: _uploading ? null : _pickFile,
               borderRadius: BorderRadius.circular(12),
               child: Container(
@@ -346,6 +349,7 @@ class _JSPluginUploadDialogState extends State<_JSPluginUploadDialog> {
                   ],
                 ),
               ),
+            ),
             ),
 
             // 已选文件信息
@@ -661,7 +665,10 @@ class _JSPluginItemState extends ConsumerState<_JSPluginItem> {
               plugin.homepage!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(left: 48, top: 4),
-              child: GestureDetector(
+              child: Semantics(
+                link: true,
+                label: '打开插件主页',
+                child: GestureDetector(
                 onTap: () => _openHomepage(plugin.homepage!),
                 child: Text(
                   plugin.homepage!,
@@ -674,6 +681,7 @@ class _JSPluginItemState extends ConsumerState<_JSPluginItem> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+              ),
               ),
             ),
         ],

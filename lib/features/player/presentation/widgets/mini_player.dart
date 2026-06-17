@@ -49,6 +49,9 @@ class MiniPlayer extends ConsumerWidget {
           Material(
             color: theme.colorScheme.surface,
             elevation: 2,
+            child: Semantics(
+            label: '展开播放器',
+            button: true,
             child: InkWell(
               onTap:
                   onTap ??
@@ -106,6 +109,7 @@ class MiniPlayer extends ConsumerWidget {
                 ),
               ),
             ),
+            ),
           ),
         ],
       ),
@@ -125,10 +129,12 @@ class MiniPlayer extends ConsumerWidget {
       clipBehavior: Clip.antiAlias,
       child:
           coverUrl != null && coverUrl.isNotEmpty
-              ? Image.network(
-                UrlHelper.buildCoverUrl(coverUrl),
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _buildPlaceholder(theme),
+              ? ExcludeSemantics(
+                child: Image.network(
+                  UrlHelper.buildCoverUrl(coverUrl),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _buildPlaceholder(theme),
+                ),
               )
               : _buildPlaceholder(theme),
     );

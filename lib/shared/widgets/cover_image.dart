@@ -21,6 +21,9 @@ class CoverImage extends StatelessWidget {
   /// 图片填充方式
   final BoxFit fit;
 
+  /// 无障碍语义标签（为 null 时图片被标记为装饰性，读屏器会跳过）
+  final String? semanticLabel;
+
   const CoverImage({
     super.key,
     this.coverUrl,
@@ -28,6 +31,7 @@ class CoverImage extends StatelessWidget {
     this.borderRadius = 8,
     this.placeholderIcon = Icons.music_note,
     this.fit = BoxFit.cover,
+    this.semanticLabel,
   });
 
   @override
@@ -38,7 +42,7 @@ class CoverImage extends StatelessWidget {
             ? UrlHelper.buildCoverUrl(coverUrl!)
             : null;
 
-    return ClipRRect(
+    final imageWidget = ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: SizedBox(
         width: size,
@@ -55,6 +59,15 @@ class CoverImage extends StatelessWidget {
                 : _buildPlaceholder(context),
       ),
     );
+
+    if (semanticLabel != null) {
+      return Semantics(
+        image: true,
+        label: semanticLabel!,
+        child: imageWidget,
+      );
+    }
+    return ExcludeSemantics(child: imageWidget);
   }
 
   Widget _buildPlaceholder(BuildContext context) {

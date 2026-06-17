@@ -135,50 +135,53 @@ class _TvFocusableState extends State<TvFocusable> {
         });
         widget.onFocusChange?.call(hasFocus);
       },
-      child: GestureDetector(
-        onTap: widget.enabled ? widget.onSelect : null,
-        child: AnimatedScale(
-          scale: _hasFocus ? widget.focusedScale : 1.0,
-          duration: widget.animationDuration,
-          curve: TvTheme.focusAnimationCurve,
-          child: AnimatedContainer(
+      child: Semantics(
+        button: true,
+        child: GestureDetector(
+          onTap: widget.enabled ? widget.onSelect : null,
+          child: AnimatedScale(
+            scale: _hasFocus ? widget.focusedScale : 1.0,
             duration: widget.animationDuration,
             curve: TvTheme.focusAnimationCurve,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              border:
-                  _hasFocus
-                      ? Border.all(
-                        color: focusBorderColor,
-                        width: widget.focusBorderWidth,
-                      )
-                      : Border.all(
-                        color: Colors.transparent,
-                        width: widget.focusBorderWidth,
-                      ),
-              boxShadow:
-                  _hasFocus && widget.showShadow
-                      ? [
-                        // 外层柔和光晕
-                        BoxShadow(
-                          color: focusBorderColor.withValues(alpha: 0.3),
-                          blurRadius: TvTheme.focusShadowBlurRadius,
-                          spreadRadius: TvTheme.focusGlowSpreadRadius,
+            child: AnimatedContainer(
+              duration: widget.animationDuration,
+              curve: TvTheme.focusAnimationCurve,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(widget.borderRadius),
+                border:
+                    _hasFocus
+                        ? Border.all(
+                          color: focusBorderColor,
+                          width: widget.focusBorderWidth,
+                        )
+                        : Border.all(
+                          color: Colors.transparent,
+                          width: widget.focusBorderWidth,
                         ),
-                        // 内层锐利边框光
-                        BoxShadow(
-                          color: focusBorderColor.withValues(alpha: 0.6),
-                          blurRadius: 4,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                      : null,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(
-                widget.borderRadius - widget.focusBorderWidth,
+                boxShadow:
+                    _hasFocus && widget.showShadow
+                        ? [
+                          // 外层柔和光晕
+                          BoxShadow(
+                            color: focusBorderColor.withValues(alpha: 0.3),
+                            blurRadius: TvTheme.focusShadowBlurRadius,
+                            spreadRadius: TvTheme.focusGlowSpreadRadius,
+                          ),
+                          // 内层锐利边框光
+                          BoxShadow(
+                            color: focusBorderColor.withValues(alpha: 0.6),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                        : null,
               ),
-              child: widget.child,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(
+                  widget.borderRadius - widget.focusBorderWidth,
+                ),
+                child: widget.child,
+              ),
             ),
           ),
         ),
@@ -336,6 +339,9 @@ class TvIconButton extends StatefulWidget {
   /// 焦点变化回调
   final ValueChanged<bool>? onFocusChange;
 
+  /// 无障碍提示文本
+  final String? tooltip;
+
   const TvIconButton({
     super.key,
     required this.icon,
@@ -348,6 +354,7 @@ class TvIconButton extends StatefulWidget {
     this.backgroundColor,
     this.iconColor,
     this.onFocusChange,
+    this.tooltip,
   });
 
   @override
@@ -365,7 +372,7 @@ class _TvIconButtonState extends State<TvIconButton> {
             ? theme.colorScheme.primary
             : (widget.iconColor ?? theme.colorScheme.onSurface);
 
-    return TvFocusable(
+    Widget result = TvFocusable(
       onSelect: widget.enabled ? widget.onPressed : null,
       autofocus: widget.autofocus,
       focusNode: widget.focusNode,
@@ -397,6 +404,12 @@ class _TvIconButtonState extends State<TvIconButton> {
         ),
       ),
     );
+
+    if (widget.tooltip != null) {
+      result = Tooltip(message: widget.tooltip!, child: result);
+    }
+
+    return result;
   }
 }
 

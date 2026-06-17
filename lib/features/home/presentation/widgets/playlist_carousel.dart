@@ -79,7 +79,10 @@ class _PlaylistCarouselItem extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      label: '打开歌单',
+      child: GestureDetector(
       onTap: onTap,
       child: SizedBox(
         width: width,
@@ -102,16 +105,18 @@ class _PlaylistCarouselItem extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     playlist.coverImageUrl != null
-                        ? CachedNetworkImage(
-                          imageUrl: UrlHelper.buildCoverUrl(
-                            playlist.coverImageUrl!,
+                        ? ExcludeSemantics(
+                          child: CachedNetworkImage(
+                            imageUrl: UrlHelper.buildCoverUrl(
+                              playlist.coverImageUrl!,
+                            ),
+                            fit: BoxFit.cover,
+                            placeholder:
+                                (context, url) => _buildPlaceholder(colorScheme),
+                            errorWidget:
+                                (context, url, error) =>
+                                    _buildPlaceholder(colorScheme),
                           ),
-                          fit: BoxFit.cover,
-                          placeholder:
-                              (context, url) => _buildPlaceholder(colorScheme),
-                          errorWidget:
-                              (context, url, error) =>
-                                  _buildPlaceholder(colorScheme),
                         )
                         : _buildPlaceholder(colorScheme),
                     if (isCurrentPlaylist && isPlaying)
@@ -145,6 +150,7 @@ class _PlaylistCarouselItem extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 

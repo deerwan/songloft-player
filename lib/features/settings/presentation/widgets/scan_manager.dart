@@ -102,6 +102,7 @@ class _ScanManagerState extends ConsumerState<ScanManager> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
+                  tooltip: '关闭提示',
                   onPressed: () => setState(() => _error = null),
                   iconSize: 20,
                 ),

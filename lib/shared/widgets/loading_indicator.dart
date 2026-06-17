@@ -187,7 +187,10 @@ class LoadingOverlay extends StatelessWidget {
               color:
                   overlayColor ??
                   Theme.of(context).colorScheme.surface.withAlpha(200),
-              child: LoadingIndicator(message: message),
+              child: Semantics(
+                label: '正在加载',
+                child: LoadingIndicator(message: message),
+              ),
             ),
           ),
       ],

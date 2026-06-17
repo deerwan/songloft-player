@@ -219,15 +219,18 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
               final lyric = lyrics[index];
               final isCurrent = index == currentIndex;
 
-              return GestureDetector(
-                onTap: () {
-                  if (widget.onSeek != null) {
-                    widget.onSeek!(lyric.time);
-                    _isUserScrolling = false;
-                    _resumeTimer?.cancel();
-                  }
-                },
-                child: Container(
+              return Semantics(
+                button: true,
+                label: '跳转到此歌词位置',
+                child: GestureDetector(
+                  onTap: () {
+                    if (widget.onSeek != null) {
+                      widget.onSeek!(lyric.time);
+                      _isUserScrolling = false;
+                      _resumeTimer?.cancel();
+                    }
+                  },
+                  child: Container(
                   height: _lineHeight,
                   alignment: Alignment.center,
                   child: Text(
@@ -248,6 +251,7 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+              ),
               );
             },
           ),

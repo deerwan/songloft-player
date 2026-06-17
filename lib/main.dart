@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -38,6 +39,10 @@ TracelyClient? _tracelyClient;
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Web 端默认启用语义树，无需用户手动点击 "Enable accessibility"
+  if (kIsWeb) {
+    SemanticsBinding.instance.ensureSemantics();
+  }
 
   // Web 上 dart:io 的 Platform 不可用，调用任意 getter 会抛 UnsupportedError，
   // 必须用 kIsWeb 守卫后再访问 Platform.isWindows

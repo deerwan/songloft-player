@@ -31,12 +31,14 @@ class PluginIcon extends StatelessWidget {
                 placeholderBuilder: (_) => _buildFallback(),
                 errorBuilder: (_, _, _) => _buildFallback(),
               )
-            : Image.network(
-                url,
-                width: size,
-                height: size,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _buildFallback(),
+            : ExcludeSemantics(
+              child: Image.network(
+                  url,
+                  width: size,
+                  height: size,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _buildFallback(),
+                ),
               ),
       );
     }
@@ -92,12 +94,14 @@ class PluginNavIcon extends StatelessWidget {
               placeholderBuilder: (_) => fallbackIcon,
               errorBuilder: (_, _, _) => fallbackIcon,
             )
-          : Image.network(
-              url,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => fallbackIcon,
+          : ExcludeSemantics(
+            child: Image.network(
+                url,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => fallbackIcon,
+              ),
             ),
     );
   }

@@ -85,7 +85,7 @@ class _StartupGateState extends ConsumerState<StartupGate> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset('assets/icons/app_icon.png', width: 64, height: 64),
+              Image.asset('assets/icons/app_icon.png', width: 64, height: 64, semanticLabel: 'Songloft'),
               const SizedBox(height: 24),
               const CircularProgressIndicator(),
               const SizedBox(height: 24),

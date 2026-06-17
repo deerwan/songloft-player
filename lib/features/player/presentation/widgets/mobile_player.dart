@@ -132,15 +132,17 @@ class _MobilePlayerState extends ConsumerState<MobilePlayer>
           // 背景模糊封面 / 无封面时的动态渐变
           if (coverUrl != null)
             Positioned.fill(
-              child: ImageFiltered(
-                imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                child: Image.network(
-                  UrlHelper.buildCoverUrl(coverUrl),
-                  fit: BoxFit.cover,
-                  errorBuilder:
-                      (_, _, _) => Container(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                      ),
+              child: ExcludeSemantics(
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                  child: Image.network(
+                    UrlHelper.buildCoverUrl(coverUrl),
+                    fit: BoxFit.cover,
+                    errorBuilder:
+                        (_, _, _) => Container(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                        ),
+                  ),
                 ),
               ),
             )
@@ -360,6 +362,7 @@ class _MobilePlayerState extends ConsumerState<MobilePlayer>
             icon: const Icon(Icons.keyboard_arrow_down_rounded),
             iconSize: 32,
             color: topBarColor,
+            tooltip: '收起',
           ),
           // 歌曲信息（专辑名）
           if (song?.album != null && song!.album!.isNotEmpty)
@@ -411,10 +414,12 @@ class _MobilePlayerState extends ConsumerState<MobilePlayer>
       clipBehavior: Clip.antiAlias,
       child:
           coverUrl != null
-              ? Image.network(
-                UrlHelper.buildCoverUrl(coverUrl),
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _buildPlaceholder(theme, size),
+              ? ExcludeSemantics(
+                child: Image.network(
+                  UrlHelper.buildCoverUrl(coverUrl),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _buildPlaceholder(theme, size),
+                ),
               )
               : _buildPlaceholder(theme, size),
     );

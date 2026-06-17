@@ -181,10 +181,12 @@ class _TvPlayerState extends ConsumerState<TvPlayer> {
       clipBehavior: Clip.antiAlias,
       child:
           coverUrl != null
-              ? Image.network(
-                UrlHelper.buildCoverUrl(coverUrl),
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _buildPlaceholderIcon(context),
+              ? ExcludeSemantics(
+                child: Image.network(
+                  UrlHelper.buildCoverUrl(coverUrl),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _buildPlaceholderIcon(context),
+                ),
               )
               : _buildPlaceholderIcon(context),
     );
@@ -725,9 +727,12 @@ class _TvFocusableProgressBarState extends State<_TvFocusableProgressBar> {
           _isFocused = hasFocus;
         });
       },
-      child: GestureDetector(
-        onTap: () => _focusNode.requestFocus(),
-        child: AnimatedContainer(
+      child: Semantics(
+        slider: true,
+        label: '播放进度',
+        child: GestureDetector(
+          onTap: () => _focusNode.requestFocus(),
+          child: AnimatedContainer(
           duration: TvTheme.focusAnimationDuration,
           curve: TvTheme.focusAnimationCurve,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -793,6 +798,12 @@ class _TvFocusableProgressBarState extends State<_TvFocusableProgressBar> {
                     );
                     widget.notifier.seek(newPosition);
                   },
+                  semanticFormatterCallback: (value) {
+                    final pos = Duration(
+                      milliseconds: (value * state.duration.inMilliseconds).round(),
+                    );
+                    return '${Formatters.formatDuration(pos.inSeconds.toDouble())} / ${Formatters.formatDuration(state.duration.inSeconds.toDouble())}';
+                  },
                 ),
               ),
               const SizedBox(height: TvTheme.spacingSmall),
@@ -828,6 +839,7 @@ class _TvFocusableProgressBarState extends State<_TvFocusableProgressBar> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -888,10 +900,13 @@ class _TvPlayModeOverlayPanel extends StatelessWidget {
       children: [
         // 透明背景层，点击关闭
         Positioned.fill(
-          child: GestureDetector(
-            onTap: onDismiss,
-            behavior: HitTestBehavior.opaque,
-            child: Container(color: Colors.transparent),
+          child: Semantics(
+            label: '关闭',
+            child: GestureDetector(
+              onTap: onDismiss,
+              behavior: HitTestBehavior.opaque,
+              child: Container(color: Colors.transparent),
+            ),
           ),
         ),
         // 播放模式面板
@@ -1009,9 +1024,11 @@ class TvMiniPlayer extends ConsumerWidget {
                 clipBehavior: Clip.antiAlias,
                 child:
                     coverUrl != null
-                        ? Image.network(
-                          UrlHelper.buildCoverUrl(coverUrl),
-                          fit: BoxFit.cover,
+                        ? ExcludeSemantics(
+                          child: Image.network(
+                            UrlHelper.buildCoverUrl(coverUrl),
+                            fit: BoxFit.cover,
+                          ),
                         )
                         : Icon(
                           Icons.music_note_rounded,

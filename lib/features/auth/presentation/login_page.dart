@@ -423,7 +423,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ),
             ],
           ),
-          child: Image.asset('assets/icons/app_icon.png', width: 160, height: 160),
+          child: Image.asset('assets/icons/app_icon.png', width: 160, height: 160, semanticLabel: 'Songloft'),
         ),
         const SizedBox(height: 40),
         Text(
@@ -521,6 +521,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   hasFocus ? colorScheme.primary : colorScheme.onSurfaceVariant,
             ),
             iconSize: 28,
+            tooltip: _obscurePassword ? '显示密码' : '隐藏密码',
             onPressed: () {
               setState(() {
                 _obscurePassword = !_obscurePassword;
@@ -613,7 +614,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     return Column(
       children: [
         // Logo
-        Image.asset('assets/icons/app_icon.png', width: 80, height: 80),
+        Image.asset('assets/icons/app_icon.png', width: 80, height: 80, semanticLabel: 'Songloft'),
         const SizedBox(height: 24),
         Text(
           'Songloft',
@@ -664,6 +665,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           icon: Icon(
             _obscurePassword ? Icons.visibility_off : Icons.visibility,
           ),
+          tooltip: _obscurePassword ? '显示密码' : '隐藏密码',
           onPressed: () {
             setState(() {
               _obscurePassword = !_obscurePassword;

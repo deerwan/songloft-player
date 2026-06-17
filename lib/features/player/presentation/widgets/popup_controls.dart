@@ -201,10 +201,13 @@ class _PlayModeOverlayPanel extends StatelessWidget {
       children: [
         // 透明背景层，点击关闭
         Positioned.fill(
-          child: GestureDetector(
-            onTap: onDismiss,
-            behavior: HitTestBehavior.opaque,
-            child: Container(color: Colors.transparent),
+          child: Semantics(
+            label: '关闭',
+            child: GestureDetector(
+              onTap: onDismiss,
+              behavior: HitTestBehavior.opaque,
+              child: Container(color: Colors.transparent),
+            ),
           ),
         ),
         // 播放模式面板
@@ -218,49 +221,56 @@ class _PlayModeOverlayPanel extends StatelessWidget {
             child: Container(
               width: panelWidth,
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final mode in PlayMode.values)
-                    InkWell(
-                      onTap: () => onPlayModeChanged(mode),
-                      child: Container(
-                        width: double.infinity,
-                        height: itemHeight,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              getIcon(mode),
-                              size: iconSize,
-                              color:
-                                  playMode == mode
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.onSurface,
+              child: FocusScope(
+                autofocus: true,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final mode in PlayMode.values)
+                      Semantics(
+                        button: true,
+                        selected: playMode == mode,
+                        child: InkWell(
+                          onTap: () => onPlayModeChanged(mode),
+                          child: Container(
+                            width: double.infinity,
+                            height: itemHeight,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
                             ),
-                            const SizedBox(width: 12),
-                            Text(
-                              getTooltip(mode),
-                              style: TextStyle(
-                                fontSize: fontSize,
-                                color:
-                                    playMode == mode
-                                        ? theme.colorScheme.primary
-                                        : theme.colorScheme.onSurface,
-                                fontWeight:
-                                    playMode == mode
-                                        ? FontWeight.w500
-                                        : FontWeight.normal,
-                              ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  getIcon(mode),
+                                  size: iconSize,
+                                  color:
+                                      playMode == mode
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurface,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  getTooltip(mode),
+                                  style: TextStyle(
+                                    fontSize: fontSize,
+                                    color:
+                                        playMode == mode
+                                            ? theme.colorScheme.primary
+                                            : theme.colorScheme.onSurface,
+                                    fontWeight:
+                                        playMode == mode
+                                            ? FontWeight.w500
+                                            : FontWeight.normal,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -432,10 +442,13 @@ class _SleepTimerOverlayPanel extends StatelessWidget {
     return Stack(
       children: [
         Positioned.fill(
-          child: GestureDetector(
-            onTap: onDismiss,
-            behavior: HitTestBehavior.opaque,
-            child: Container(color: Colors.transparent),
+          child: Semantics(
+            label: '关闭',
+            child: GestureDetector(
+              onTap: onDismiss,
+              behavior: HitTestBehavior.opaque,
+              child: Container(color: Colors.transparent),
+            ),
           ),
         ),
         Positioned(
@@ -453,13 +466,16 @@ class _SleepTimerOverlayPanel extends StatelessWidget {
               width: _panelWidth,
               constraints: BoxConstraints(maxHeight: availableHeight),
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: SingleChildScrollView(
-                child: SleepTimerContent(
-                  status: status,
-                  isLive: isLive,
-                  onSetDuration: onSetDuration,
-                  onSetAfterSongs: onSetAfterSongs,
-                  onCancel: onCancel,
+              child: FocusScope(
+                autofocus: true,
+                child: SingleChildScrollView(
+                  child: SleepTimerContent(
+                    status: status,
+                    isLive: isLive,
+                    onSetDuration: onSetDuration,
+                    onSetAfterSongs: onSetAfterSongs,
+                    onCancel: onCancel,
+                  ),
                 ),
               ),
             ),

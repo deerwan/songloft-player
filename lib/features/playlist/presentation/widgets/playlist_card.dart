@@ -61,16 +61,18 @@ class PlaylistCard extends StatelessWidget {
                 children: [
                   // 封面图
                   playlist.coverImageUrl != null
-                      ? CachedNetworkImage(
-                        imageUrl: UrlHelper.buildCoverUrl(
-                          playlist.coverImageUrl!,
+                      ? ExcludeSemantics(
+                        child: CachedNetworkImage(
+                          imageUrl: UrlHelper.buildCoverUrl(
+                            playlist.coverImageUrl!,
+                          ),
+                          fit: BoxFit.cover,
+                          placeholder:
+                              (context, url) => _buildPlaceholder(colorScheme),
+                          errorWidget:
+                              (context, url, error) =>
+                                  _buildPlaceholder(colorScheme),
                         ),
-                        fit: BoxFit.cover,
-                        placeholder:
-                            (context, url) => _buildPlaceholder(colorScheme),
-                        errorWidget:
-                            (context, url, error) =>
-                                _buildPlaceholder(colorScheme),
                       )
                       : _buildPlaceholder(colorScheme),
 
@@ -94,19 +96,26 @@ class PlaylistCard extends StatelessWidget {
                     Positioned(
                       right: 8,
                       bottom: 8,
-                      child: Material(
-                        color: colorScheme.primary,
-                        shape: const CircleBorder(),
-                        elevation: 4,
-                        child: InkWell(
-                          onTap: onPlayAll,
-                          customBorder: const CircleBorder(),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.play_arrow,
-                              color: colorScheme.onPrimary,
-                              size: 24,
+                      child: Semantics(
+                        button: true,
+                        label: '播放全部',
+                        child: Tooltip(
+                          message: '播放全部',
+                          child: Material(
+                            color: colorScheme.primary,
+                            shape: const CircleBorder(),
+                            elevation: 4,
+                            child: InkWell(
+                              onTap: onPlayAll,
+                              customBorder: const CircleBorder(),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Icon(
+                                  Icons.play_arrow,
+                                  color: colorScheme.onPrimary,
+                                  size: 24,
+                                ),
+                              ),
                             ),
                           ),
                         ),

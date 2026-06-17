@@ -246,21 +246,23 @@ class _SongEditPageState extends ConsumerState<SongEditPage> {
                       Center(
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            UrlHelper.buildCoverUrl(previewUrl),
-                            width: 150,
-                            height: 150,
-                            fit: BoxFit.cover,
-                            errorBuilder:
-                                (_, _, _) => Container(
-                                  width: 150,
-                                  height: 150,
-                                  color: Colors.grey[300],
-                                  child: const Icon(
-                                    Icons.broken_image,
-                                    size: 48,
+                          child: ExcludeSemantics(
+                            child: Image.network(
+                              UrlHelper.buildCoverUrl(previewUrl),
+                              width: 150,
+                              height: 150,
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (_, _, _) => Container(
+                                    width: 150,
+                                    height: 150,
+                                    color: Colors.grey[300],
+                                    child: const Icon(
+                                      Icons.broken_image,
+                                      size: 48,
+                                    ),
                                   ),
-                                ),
+                            ),
                           ),
                         ),
                       ),

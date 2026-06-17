@@ -131,15 +131,17 @@ class _DesktopFullPlayerState extends ConsumerState<DesktopFullPlayer>
           // 背景模糊封面 / 无封面时的动态渐变
           if (coverUrl != null)
             Positioned.fill(
-              child: ImageFiltered(
-                imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                child: Image.network(
-                  UrlHelper.buildCoverUrl(coverUrl),
-                  fit: BoxFit.cover,
-                  errorBuilder:
-                      (_, _, _) => Container(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                      ),
+              child: ExcludeSemantics(
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                  child: Image.network(
+                    UrlHelper.buildCoverUrl(coverUrl),
+                    fit: BoxFit.cover,
+                    errorBuilder:
+                        (_, _, _) => Container(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                        ),
+                  ),
                 ),
               ),
             )
@@ -321,6 +323,7 @@ class _DesktopFullPlayerState extends ConsumerState<DesktopFullPlayer>
           icon: const Icon(Icons.keyboard_arrow_down_rounded),
           iconSize: 32,
           color: topBarColor,
+          tooltip: '收起',
         ),
         // 中间标题
         Text(
@@ -364,10 +367,12 @@ class _DesktopFullPlayerState extends ConsumerState<DesktopFullPlayer>
       clipBehavior: Clip.antiAlias,
       child:
           coverUrl != null
-              ? Image.network(
-                UrlHelper.buildCoverUrl(coverUrl),
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _buildPlaceholder(theme, size),
+              ? ExcludeSemantics(
+                child: Image.network(
+                  UrlHelper.buildCoverUrl(coverUrl),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _buildPlaceholder(theme, size),
+                ),
               )
               : _buildPlaceholder(theme, size),
     );

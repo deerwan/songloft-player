@@ -548,31 +548,33 @@ class _PlaylistsPageState extends ConsumerState<PlaylistsPage> {
                     height: 48,
                     child:
                         playlist.coverImageUrl != null
-                            ? CachedNetworkImage(
-                              imageUrl: UrlHelper.buildCoverUrl(
-                                playlist.coverImageUrl!,
+                            ? ExcludeSemantics(
+                              child: CachedNetworkImage(
+                                imageUrl: UrlHelper.buildCoverUrl(
+                                  playlist.coverImageUrl!,
+                                ),
+                                fit: BoxFit.cover,
+                                placeholder:
+                                    (context, url) => Container(
+                                      color: colorScheme.surfaceContainerHighest,
+                                      child: Icon(
+                                        Icons.queue_music,
+                                        size: 24,
+                                        color: colorScheme.onSurfaceVariant
+                                            .withValues(alpha: 0.5),
+                                      ),
+                                    ),
+                                errorWidget:
+                                    (context, url, error) => Container(
+                                      color: colorScheme.surfaceContainerHighest,
+                                      child: Icon(
+                                        Icons.queue_music,
+                                        size: 24,
+                                        color: colorScheme.onSurfaceVariant
+                                            .withValues(alpha: 0.5),
+                                      ),
+                                    ),
                               ),
-                              fit: BoxFit.cover,
-                              placeholder:
-                                  (context, url) => Container(
-                                    color: colorScheme.surfaceContainerHighest,
-                                    child: Icon(
-                                      Icons.queue_music,
-                                      size: 24,
-                                      color: colorScheme.onSurfaceVariant
-                                          .withValues(alpha: 0.5),
-                                    ),
-                                  ),
-                              errorWidget:
-                                  (context, url, error) => Container(
-                                    color: colorScheme.surfaceContainerHighest,
-                                    child: Icon(
-                                      Icons.queue_music,
-                                      size: 24,
-                                      color: colorScheme.onSurfaceVariant
-                                          .withValues(alpha: 0.5),
-                                    ),
-                                  ),
                             )
                             : Container(
                               color: colorScheme.surfaceContainerHighest,
@@ -636,6 +638,7 @@ class _PlaylistsPageState extends ConsumerState<PlaylistsPage> {
     return AppBar(
       leading: IconButton(
         icon: const Icon(Icons.close),
+        tooltip: '退出多选',
         onPressed: _toggleSelectMode,
       ),
       title: Text('已选择 ${_selectedPlaylistIds.length} 个'),
@@ -1344,13 +1347,15 @@ class _PlaylistFormDialogState extends State<_PlaylistFormDialog> {
     // 网络图片预览
     final previewUrl = _previewCoverUrl;
     if (previewUrl != null) {
-      return CachedNetworkImage(
-        imageUrl: UrlHelper.buildCoverUrl(previewUrl),
-        fit: BoxFit.cover,
-        placeholder:
-            (context, url) =>
-                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        errorWidget: (context, url, error) => _buildPlaceholder(colorScheme),
+      return ExcludeSemantics(
+        child: CachedNetworkImage(
+          imageUrl: UrlHelper.buildCoverUrl(previewUrl),
+          fit: BoxFit.cover,
+          placeholder:
+              (context, url) =>
+                  const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          errorWidget: (context, url, error) => _buildPlaceholder(colorScheme),
+        ),
       );
     }
 

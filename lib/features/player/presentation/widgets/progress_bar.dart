@@ -141,6 +141,12 @@ class _PlayerProgressBarState extends State<PlayerProgressBar> {
               onChangeStart: _onDragStart,
               onChanged: _onDragUpdate,
               onChangeEnd: (value) => _onDragEnd(),
+              semanticFormatterCallback: (value) {
+                final pos = Duration(
+                  milliseconds: (value * widget.duration.inMilliseconds).round(),
+                );
+                return '${_formatDuration(pos)} / ${_formatDuration(widget.duration)}';
+              },
             ),
           ),
         ),
@@ -229,54 +235,58 @@ class _ClickableProgressBarState extends State<ClickableProgressBar> {
         widget.inactiveColor ?? theme.colorScheme.surfaceContainerHighest;
     final barHeight = _isHovering ? widget.height + 2 : widget.height;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: GestureDetector(
-        onTapDown: (details) {
-          final box = context.findRenderObject() as RenderBox;
-          _seekTo(details.localPosition.dx / box.size.width);
-        },
-        onHorizontalDragStart: (details) {
-          final box = context.findRenderObject() as RenderBox;
-          setState(() {
-            _isDragging = true;
-            _dragProgress =
-                (details.localPosition.dx / box.size.width).clamp(0.0, 1.0);
-          });
-        },
-        onHorizontalDragUpdate: (details) {
-          final box = context.findRenderObject() as RenderBox;
-          setState(() {
-            _dragProgress =
-                (details.localPosition.dx / box.size.width).clamp(0.0, 1.0);
-          });
-        },
-        onHorizontalDragEnd: (_) {
-          _seekTo(_dragProgress);
-          setState(() {
-            _isDragging = false;
-          });
-        },
-        child: SizedBox(
-          height: barHeight,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Stack(
-                children: [
-                  Positioned.fill(
-                    child: ColoredBox(color: inactiveColor),
-                  ),
-                  Positioned(
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: constraints.maxWidth * _displayProgress,
-                    child: ColoredBox(color: activeColor),
-                  ),
-                ],
-              );
-            },
+    return Semantics(
+      slider: true,
+      label: '播放进度',
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovering = true),
+        onExit: (_) => setState(() => _isHovering = false),
+        child: GestureDetector(
+          onTapDown: (details) {
+            final box = context.findRenderObject() as RenderBox;
+            _seekTo(details.localPosition.dx / box.size.width);
+          },
+          onHorizontalDragStart: (details) {
+            final box = context.findRenderObject() as RenderBox;
+            setState(() {
+              _isDragging = true;
+              _dragProgress =
+                  (details.localPosition.dx / box.size.width).clamp(0.0, 1.0);
+            });
+          },
+          onHorizontalDragUpdate: (details) {
+            final box = context.findRenderObject() as RenderBox;
+            setState(() {
+              _dragProgress =
+                  (details.localPosition.dx / box.size.width).clamp(0.0, 1.0);
+            });
+          },
+          onHorizontalDragEnd: (_) {
+            _seekTo(_dragProgress);
+            setState(() {
+              _isDragging = false;
+            });
+          },
+          child: SizedBox(
+            height: barHeight,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Stack(
+                  children: [
+                    Positioned.fill(
+                      child: ColoredBox(color: inactiveColor),
+                    ),
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: constraints.maxWidth * _displayProgress,
+                      child: ColoredBox(color: activeColor),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),

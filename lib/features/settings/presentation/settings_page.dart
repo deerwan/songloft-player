@@ -984,7 +984,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       applicationVersion: version,
       applicationIcon: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Image.asset('assets/icons/app_icon.png', width: 48, height: 48),
+        child: Image.asset('assets/icons/app_icon.png', width: 48, height: 48, semanticLabel: 'Songloft'),
       ),
       applicationLegalese: '© 2024-2026 Songloft. All rights reserved.',
       children: [
@@ -1000,7 +1000,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ),
         ],
         const SizedBox(height: 16),
-        InkWell(
+        Semantics(
+          link: true,
+          label: '打开 GitHub 页面',
+          child: InkWell(
           onTap: () => _launchUrl('https://github.com/songloft-org/songloft'),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1020,6 +1023,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ],
           ),
+        ),
         ),
       ],
     );

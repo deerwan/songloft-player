@@ -347,6 +347,7 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
                   suffixIcon: _searchText.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear),
+                          tooltip: '清除搜索',
                           onPressed: () {
                             _searchController.clear();
                             _onSearchChanged('');
@@ -459,6 +460,7 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.chevron_left),
+                  tooltip: '上一页',
                   onPressed: _currentPage > 1
                       ? () {
                           setState(() => _currentPage--);
@@ -469,6 +471,7 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
                 Text('$_currentPage / $totalPages'),
                 IconButton(
                   icon: const Icon(Icons.chevron_right),
+                  tooltip: '下一页',
                   onPressed: _currentPage < totalPages
                       ? () {
                           setState(() => _currentPage++);
@@ -646,12 +649,14 @@ class _RegistryPluginItemState extends ConsumerState<_RegistryPluginItem> {
                 placeholderBuilder: (_) => _buildFallbackIcon(entry, theme),
                 errorBuilder: (_, _, _) => _buildFallbackIcon(entry, theme),
               )
-            : Image.network(
-                url,
-                width: 40,
-                height: 40,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _buildFallbackIcon(entry, theme),
+            : ExcludeSemantics(
+              child: Image.network(
+                  url,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _buildFallbackIcon(entry, theme),
+                ),
               ),
       );
     }
@@ -881,6 +886,7 @@ class _RegistryManagementDialogState
                           : null,
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline),
+                        tooltip: '删除订阅源',
                         onPressed: () {
                           setState(() => _registries.removeAt(index));
                         },

@@ -334,15 +334,17 @@ class _QueueSongItem extends StatelessWidget {
                   child: Stack(
                     children: [
                       if (coverUrl != null)
-                        CachedNetworkImage(
-                          imageUrl: UrlHelper.buildCoverUrl(coverUrl),
-                          fit: BoxFit.cover,
-                          width: 48,
-                          height: 48,
-                          placeholder:
-                              (_, _) => _buildCoverPlaceholder(colorScheme),
-                          errorWidget:
-                              (_, _, _) => _buildCoverPlaceholder(colorScheme),
+                        ExcludeSemantics(
+                          child: CachedNetworkImage(
+                            imageUrl: UrlHelper.buildCoverUrl(coverUrl),
+                            fit: BoxFit.cover,
+                            width: 48,
+                            height: 48,
+                            placeholder:
+                                (_, _) => _buildCoverPlaceholder(colorScheme),
+                            errorWidget:
+                                (_, _, _) => _buildCoverPlaceholder(colorScheme),
+                          ),
                         )
                       else
                         _buildCoverPlaceholder(colorScheme),
@@ -410,6 +412,7 @@ class _QueueSongItem extends StatelessWidget {
                   onPressed: onRemove,
                   icon: const Icon(Icons.close_rounded),
                   iconSize: 20,
+                  tooltip: '从队列移除',
                   style: IconButton.styleFrom(
                     foregroundColor: colorScheme.onSurfaceVariant,
                   ),
